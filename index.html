@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriTrack Ultra</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f2f2f2;
+}
+
+header{
+background:#4CAF50;
+color:white;
+padding:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.container{
+padding:15px;
+max-width:900px;
+margin:auto;
+}
+
+.card{
+background:white;
+padding:20px;
+margin-top:15px;
+border-radius:10px;
+box-shadow:0 2px 10px rgba(0,0,0,0.15);
+}
+
+button{
+padding:10px;
+border:none;
+border-radius:6px;
+background:#4CAF50;
+color:white;
+margin:5px;
+}
+
+input{
+padding:10px;
+margin:5px;
+border-radius:6px;
+border:1px solid #ccc;
+width:90%;
+}
+
+.progress{
+background:#ddd;
+height:25px;
+border-radius:20px;
+}
+
+.bar{
+height:100%;
+background:#4CAF50;
+width:0%;
+border-radius:20px;
+color:white;
+text-align:center;
+}
+
+.nav{
+position:fixed;
+bottom:0;
+width:100%;
+background:white;
+display:flex;
+justify-content:space-around;
+padding:10px;
+box-shadow:0 -2px 8px rgba(0,0,0,0.2);
+}
+
+.rank{
+background:#f4f4f4;
+padding:8px;
+margin:4px;
+border-radius:6px;
+}
+
+.badge{
+background:gold;
+padding:5px;
+border-radius:6px;
+}
+
+.dark{
+background:#121212;
+color:white;
+}
+
+.dark .card{
+background:#1e1e1e;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+<h2>NutriTrack</h2>
+<button onclick="modoOscuro()">🌙</button>
+</header>
+
+<div class="container" id="app"></div>
+
+<div class="nav">
+<button onclick="inicio()">🏠</button>
+<button onclick="ranking()">🏆</button>
+<button onclick="reto()">🔥</button>
+</div>
+
+<script>
+
+let pacientes=JSON.parse(localStorage.getItem("pacientes"))||[]
+let nutricionistas=JSON.parse(localStorage.getItem("nutricionistas"))||[]
+
+let pacienteActual=null
+
+function guardar(){
+localStorage.setItem("pacientes",JSON.stringify(pacientes))
+localStorage.setItem("nutricionistas",JSON.stringify(nutricionistas))
+}
+
+function inicio(){
+
+app.innerHTML=`
+
+<div class="card">
+
+<h2>Bienvenido</h2>
+
+<button onclick="loginNutri()">Soy Nutricionista</button>
+
+<br><br>
+
+<input id="nombrePaciente" placeholder="Nombre paciente">
+
+<button onclick="loginPaciente()">Entrar paciente</button>
+
+</div>
+
+`
+
+}
+
+function loginNutri(){
+
+app.innerHTML=`
+
+<div class="card">
+
+<button onclick="inicio()">⬅</button>
+
+<h2>Nutricionista</h2>
+
+<input id="user" placeholder="Usuario">
+
+<input id="pass" type="password" placeholder="Password">
+
+<button onclick="entrarNutri()">Entrar</button>
+
+<h3>Registrar</h3>
+
+<input id="nuevoUser">
+
+<input id="nuevoPass">
+
+<button onclick="registrarNutri()">Registrar</button>
+
+</div>
+
+`
+
+}
+
+function registrarNutri(){
+
+let u=document.getElementById("nuevoUser").value
+let p=document.getElementById("nuevoPass").value
+
+nutricionistas.push({user:u,pass:p})
+
+guardar()
+
+alert("Registrado")
+
+inicio()
+
+}
+
+function entrarNutri(){
+
+dashboard()
+
+}
+
+function dashboard(){
+
+let total=pacientes.length
+
+let promedio=0
+
+pacientes.forEach(p=>promedio+=p.progreso)
+
+promedio=Math.round(promedio/(total||1))
+
+let lista=""
+
+pacientes.forEach((p,i)=>{
+
+lista+=`
+
+<div class="card">
+
+${p.nombre}
+
+<br>
+
+${p.progreso}% progreso
+
+<button onclick="verPaciente(${i})">Ver</button>
+
+</div>
+
+`
+
+})
+
+app.innerHTML=`
+
+<div class="card">
+
+<button onclick="inicio()">⬅</button>
+
+<h2>Dashboard Nutricionista</h2>
+
+Pacientes: ${total}
+
+<br>
+
+Promedio progreso: ${promedio}%
+
+</div>
+
+<div class="card">
+
+<h3>Crear paciente</h3>
+
+<input id="nombre">
+
+<input id="calorias" placeholder="Meta calorías">
+
+<button onclick="crearPaciente()">Crear</button>
+
+</div>
+
+${lista}
+
+`
+
+}
+
+function crearPaciente(){
+
+let n=document.getElementById("nombre").value
+let c=document.getElementById("calorias").value
+
+pacientes.push({
+nombre:n,
+meta:c,
+consumido:0,
+progreso:0,
+nivel:1,
+puntos:0,
+racha:0,
+historial:[0]
+})
+
+guardar()
+
+dashboard()
+
+}
+
+function loginPaciente(){
+
+let n=document.getElementById("nombrePaciente").value
+
+pacienteActual=pacientes.find(p=>p.nombre===n)
+
+if(!pacienteActual){
+alert("No existe")
+return
+}
+
+panelPaciente()
+
+}
+
+function panelPaciente(){
+
+app.innerHTML=`
+
+<div class="card">
+
+<button onclick="inicio()">⬅</button>
+
+<h2>${pacienteActual.nombre}</h2>
+
+<div class="progress">
+
+<div class="bar" id="barra">${pacienteActual.progreso}%</div>
+
+</div>
+
+<p>Calorías ${pacienteActual.consumido}/${pacienteActual.meta}</p>
+
+<p>Nivel ${pacienteActual.nivel}</p>
+
+<p>Puntos ${pacienteActual.puntos}</p>
+
+<p>🔥 Racha ${pacienteActual.racha}</p>
+
+<div id="medalla"></div>
+
+</div>
+
+<div class="card">
+
+<button onclick="comer(300)">Desayuno</button>
+<button onclick="comer(600)">Almuerzo</button>
+<button onclick="comer(500)">Cena</button>
+
+</div>
+
+<div class="card">
+
+<h3>Dieta sugerida</h3>
+
+${dieta(pacienteActual.meta)}
+
+</div>
+
+<div class="card">
+
+<button onclick="pedido()">Pedir comida preparada Q50</button>
+
+</div>
+
+<div class="card">
+
+<canvas id="grafica" width="300" height="200"></canvas>
+
+</div>
+
+<div class="card">
+
+<button onclick="exportar()">Exportar progreso PDF</button>
+
+</div>
+
+`
+
+actualizarBarra()
+grafica()
+
+}
+
+function comer(cal){
+
+pacienteActual.consumido+=cal
+pacienteActual.puntos+=10
+
+pacienteActual.progreso=Math.floor((pacienteActual.consumido/pacienteActual.meta)*100)
+
+if(pacienteActual.progreso>100)pacienteActual.progreso=100
+
+pacienteActual.historial.push(pacienteActual.progreso)
+
+if(pacienteActual.progreso==100){
+
+pacienteActual.nivel++
+pacienteActual.racha++
+
+document.getElementById("medalla").innerHTML="<div class='badge'>🏅 Meta completada</div>"
+
+}
+
+guardar()
+
+actualizarBarra()
+grafica()
+
+}
+
+function actualizarBarra(){
+
+let b=document.getElementById("barra")
+
+if(b){
+
+b.style.width=pacienteActual.progreso+"%"
+b.innerText=pacienteActual.progreso+"%"
+
+}
+
+}
+
+function dieta(cal){
+
+if(cal<1800)
+
+return "Desayuno: Yogurt + fruta<br>Almuerzo: Pollo + ensalada<br>Cena: Pescado + verduras"
+
+else
+
+return "Desayuno: Huevos + avena<br>Almuerzo: Pollo + arroz<br>Cena: Salmón + ensalada"
+
+}
+
+function ranking(){
+
+let orden=[...pacientes].sort((a,b)=>b.puntos-a.puntos)
+
+let html="<div class='card'><h2>Ranking</h2>"
+
+orden.forEach(p=>{
+
+html+=`<div class="rank">${p.nombre} - ${p.puntos} pts</div>`
+
+})
+
+html+="</div>"
+
+app.innerHTML=html
+
+}
+
+function reto(){
+
+app.innerHTML=`
+
+<div class="card">
+
+<h2>Reto semanal</h2>
+
+Completa 7 días seguidos
+
+<br>
+
+Premio: 100 puntos
+
+</div>
+
+`
+
+}
+
+function pedido(){
+
+alert("Pedido confirmado 🍱 llegará mañana")
+
+}
+
+function grafica(){
+
+let c=document.getElementById("grafica")
+
+if(!c)return
+
+let ctx=c.getContext("2d")
+
+ctx.clearRect(0,0,300,200)
+
+ctx.beginPath()
+
+ctx.moveTo(0,200)
+
+pacienteActual.historial.forEach((v,i)=>{
+
+ctx.lineTo(i*30,200-(v*2))
+
+})
+
+ctx.strokeStyle="#4CAF50"
+
+ctx.stroke()
+
+}
+
+function exportar(){
+
+window.print()
+
+}
+
+function verPaciente(i){
+
+pacienteActual=pacientes[i]
+
+panelPaciente()
+
+}
+
+function modoOscuro(){
+
+document.body.classList.toggle("dark")
+
+}
+
+inicio()
+
+</script>
+
+</body>
+</html>
