@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-
 <html>
+
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NutriTrack Ultra</title>
@@ -20,13 +21,13 @@ color:white;
 padding:15px;
 display:flex;
 justify-content:space-between;
-align-items:center;
 }
 
 .container{
 padding:15px;
 max-width:900px;
 margin:auto;
+padding-bottom:140px;
 }
 
 .card{
@@ -44,9 +45,10 @@ border-radius:6px;
 background:#4CAF50;
 color:white;
 margin:5px;
+cursor:pointer;
 }
 
-input{
+input,select{
 padding:10px;
 margin:5px;
 border-radius:6px;
@@ -63,7 +65,6 @@ border-radius:20px;
 .bar{
 height:100%;
 background:#4CAF50;
-width:0%;
 border-radius:20px;
 color:white;
 text-align:center;
@@ -80,17 +81,9 @@ padding:10px;
 box-shadow:0 -2px 8px rgba(0,0,0,0.2);
 }
 
-.rank{
-background:#f4f4f4;
-padding:8px;
-margin:4px;
-border-radius:6px;
-}
-
-.badge{
-background:gold;
-padding:5px;
-border-radius:6px;
+.avatar{
+font-size:60px;
+text-align:center;
 }
 
 .dark{
@@ -125,12 +118,71 @@ background:#1e1e1e;
 
 let pacientes=JSON.parse(localStorage.getItem("pacientes"))||[]
 let nutricionistas=JSON.parse(localStorage.getItem("nutricionistas"))||[]
-
 let pacienteActual=null
 
 function guardar(){
+
 localStorage.setItem("pacientes",JSON.stringify(pacientes))
 localStorage.setItem("nutricionistas",JSON.stringify(nutricionistas))
+
+}
+
+function calcularCalorias(peso,altura,edad,objetivo){
+
+peso=parseFloat(peso)
+altura=parseFloat(altura)
+edad=parseFloat(edad)
+
+let base=(peso*10)+(altura*6.25)-(edad*5)+5
+
+if(objetivo=="Bajar peso") base-=400
+if(objetivo=="Subir peso") base+=400
+
+return Math.round(base)
+
+}
+
+function reiniciarDia(){
+
+if(!pacienteActual) return
+
+let hoy=new Date().toDateString()
+
+if(pacienteActual.fecha!=hoy){
+
+pacienteActual.fecha=hoy
+
+pacienteActual.comidas={
+desayuno:false,
+refa1:false,
+almuerzo:false,
+refa2:false,
+cena:false
+}
+
+pacienteActual.progreso=0
+
+guardar()
+
+}
+
+}
+
+function barraRacha(){
+
+let html=""
+
+for(let i=1;i<=7;i++){
+
+if(i<=pacienteActual.racha)
+html+="🔥 "
+else
+html+="⬜ "
+
+}
+
+return html
+
 }
 
 function inicio(){
@@ -142,12 +194,7 @@ app.innerHTML=`
 <h2>Bienvenido</h2>
 
 <button onclick="loginNutri()">Soy Nutricionista</button>
-
-<br><br>
-
-<input id="nombrePaciente" placeholder="Nombre paciente">
-
-<button onclick="loginPaciente()">Entrar paciente</button>
+<button onclick="loginPaciente()">Soy Paciente</button>
 
 </div>
 
@@ -163,19 +210,17 @@ app.innerHTML=`
 
 <button onclick="inicio()">⬅</button>
 
-<h2>Nutricionista</h2>
+<h2>Login Nutricionista</h2>
 
-<input id="user" placeholder="Usuario">
-
-<input id="pass" type="password" placeholder="Password">
+<input id="userNutri" placeholder="Usuario">
+<input id="passNutri" type="password" placeholder="Contraseña">
 
 <button onclick="entrarNutri()">Entrar</button>
 
-<h3>Registrar</h3>
+<h3>Registrar Nutricionista</h3>
 
-<input id="nuevoUser">
-
-<input id="nuevoPass">
+<input id="nuevoUserNutri">
+<input id="nuevoPassNutri">
 
 <button onclick="registrarNutri()">Registrar</button>
 
@@ -187,34 +232,38 @@ app.innerHTML=`
 
 function registrarNutri(){
 
-let u=document.getElementById("nuevoUser").value
-let p=document.getElementById("nuevoPass").value
+let u=document.getElementById("nuevoUserNutri").value
+let p=document.getElementById("nuevoPassNutri").value
 
 nutricionistas.push({user:u,pass:p})
 
 guardar()
 
-alert("Registrado")
+alert("Nutricionista registrado")
 
-inicio()
+loginNutri()
 
 }
 
 function entrarNutri(){
+
+let u=document.getElementById("userNutri").value
+let p=document.getElementById("passNutri").value
+
+let nutri=nutricionistas.find(n=>n.user==u && n.pass==p)
+
+if(!nutri){
+
+alert("Credenciales incorrectas")
+return
+
+}
 
 dashboard()
 
 }
 
 function dashboard(){
-
-let total=pacientes.length
-
-let promedio=0
-
-pacientes.forEach(p=>promedio+=p.progreso)
-
-promedio=Math.round(promedio/(total||1))
 
 let lista=""
 
@@ -224,11 +273,15 @@ lista+=`
 
 <div class="card">
 
-${p.nombre}
+<b>${p.nombre}</b>
 
 <br>
 
 ${p.progreso}% progreso
+
+<br>
+
+<button onclick="crearDieta(${i})">Crear dieta</button>
 
 <button onclick="verPaciente(${i})">Ver</button>
 
@@ -242,15 +295,7 @@ app.innerHTML=`
 
 <div class="card">
 
-<button onclick="inicio()">⬅</button>
-
 <h2>Dashboard Nutricionista</h2>
-
-Pacientes: ${total}
-
-<br>
-
-Promedio progreso: ${promedio}%
 
 </div>
 
@@ -258,9 +303,19 @@ Promedio progreso: ${promedio}%
 
 <h3>Crear paciente</h3>
 
-<input id="nombre">
+<input id="nombre" placeholder="Nombre">
+<input id="usuario" placeholder="Usuario">
+<input id="password" placeholder="Password">
 
-<input id="calorias" placeholder="Meta calorías">
+<input id="edad" placeholder="Edad">
+<input id="peso" placeholder="Peso">
+<input id="altura" placeholder="Altura">
+
+<select id="objetivo">
+<option>Bajar peso</option>
+<option>Mantener</option>
+<option>Subir peso</option>
+</select>
 
 <button onclick="crearPaciente()">Crear</button>
 
@@ -274,19 +329,37 @@ ${lista}
 
 function crearPaciente(){
 
-let n=document.getElementById("nombre").value
-let c=document.getElementById("calorias").value
+let edad=document.getElementById("edad").value
+let peso=document.getElementById("peso").value
+let altura=document.getElementById("altura").value
+let objetivo=document.getElementById("objetivo").value
 
-pacientes.push({
-nombre:n,
-meta:c,
-consumido:0,
+let p={
+
+nombre:document.getElementById("nombre").value,
+usuario:document.getElementById("usuario").value,
+password:document.getElementById("password").value,
+
+edad:edad,
+peso:peso,
+altura:altura,
+objetivo:objetivo,
+
+calorias:calcularCalorias(peso,altura,edad,objetivo),
+
+fecha:new Date().toDateString(),
+
+dieta:{desayuno:"",refa1:"",almuerzo:"",refa2:"",cena:""},
+
+comidas:{desayuno:false,refa1:false,almuerzo:false,refa2:false,cena:false},
+
 progreso:0,
-nivel:1,
-puntos:0,
 racha:0,
-historial:[0]
-})
+nivel:1
+
+}
+
+pacientes.push(p)
 
 guardar()
 
@@ -294,22 +367,23 @@ dashboard()
 
 }
 
+function crearDieta(i){
+
+let d=prompt("Desayuno")
+let r1=prompt("Refa")
+let a=prompt("Almuerzo")
+let r2=prompt("Refa")
+let c=prompt("Cena")
+
+pacientes[i].dieta={desayuno:d,refa1:r1,almuerzo:a,refa2:r2,cena:c}
+
+guardar()
+
+alert("Dieta creada")
+
+}
+
 function loginPaciente(){
-
-let n=document.getElementById("nombrePaciente").value
-
-pacienteActual=pacientes.find(p=>p.nombre===n)
-
-if(!pacienteActual){
-alert("No existe")
-return
-}
-
-panelPaciente()
-
-}
-
-function panelPaciente(){
 
 app.innerHTML=`
 
@@ -317,128 +391,180 @@ app.innerHTML=`
 
 <button onclick="inicio()">⬅</button>
 
-<h2>${pacienteActual.nombre}</h2>
+<h2>Login Paciente</h2>
 
-<div class="progress">
+<input id="userPaciente" placeholder="Usuario">
+<input id="passPaciente" type="password" placeholder="Contraseña">
 
-<div class="bar" id="barra">${pacienteActual.progreso}%</div>
-
-</div>
-
-<p>Calorías ${pacienteActual.consumido}/${pacienteActual.meta}</p>
-
-<p>Nivel ${pacienteActual.nivel}</p>
-
-<p>Puntos ${pacienteActual.puntos}</p>
-
-<p>🔥 Racha ${pacienteActual.racha}</p>
-
-<div id="medalla"></div>
-
-</div>
-
-<div class="card">
-
-<button onclick="comer(300)">Desayuno</button>
-<button onclick="comer(600)">Almuerzo</button>
-<button onclick="comer(500)">Cena</button>
-
-</div>
-
-<div class="card">
-
-<h3>Dieta sugerida</h3>
-
-${dieta(pacienteActual.meta)}
-
-</div>
-
-<div class="card">
-
-<button onclick="pedido()">Pedir comida preparada Q50</button>
-
-</div>
-
-<div class="card">
-
-<canvas id="grafica" width="300" height="200"></canvas>
-
-</div>
-
-<div class="card">
-
-<button onclick="exportar()">Exportar progreso PDF</button>
+<button onclick="entrarPaciente()">Entrar</button>
 
 </div>
 
 `
 
-actualizarBarra()
-grafica()
+}
+
+function entrarPaciente(){
+
+let u=document.getElementById("userPaciente").value
+let p=document.getElementById("passPaciente").value
+
+pacienteActual=pacientes.find(x=>x.usuario==u && x.password==p)
+
+if(!pacienteActual){
+
+alert("Credenciales incorrectas")
+return
 
 }
 
-function comer(cal){
+panelPaciente()
 
-pacienteActual.consumido+=cal
-pacienteActual.puntos+=10
+}
 
-pacienteActual.progreso=Math.floor((pacienteActual.consumido/pacienteActual.meta)*100)
+function avatar(){
 
-if(pacienteActual.progreso>100)pacienteActual.progreso=100
+let p=pacienteActual.progreso
 
-pacienteActual.historial.push(pacienteActual.progreso)
+if(p>=100) return "🏆"
+if(p>=80) return "🏋"
+if(p>=60) return "🦾"
+if(p>=40) return "💪"
+return "🙂"
 
-if(pacienteActual.progreso==100){
+}
 
-pacienteActual.nivel++
+function panelPaciente(){
+
+reiniciarDia()
+
+app.innerHTML=`
+
+<div class="card">
+
+<h2>${pacienteActual.nombre}</h2>
+
+<div class="avatar">${avatar()}</div>
+
+<div class="progress">
+<div class="bar" style="width:${pacienteActual.progreso}%">
+${pacienteActual.progreso}%
+</div>
+</div>
+
+<p>Calorías recomendadas: ${pacienteActual.calorias} kcal</p>
+
+<p>Racha semanal:</p>
+
+<p style="font-size:22px">${barraRacha()}</p>
+
+</div>
+
+<div class="card">
+
+<h3>Dieta</h3>
+
+<p>Desayuno: ${pacienteActual.dieta.desayuno}</p>
+<p>Refa: ${pacienteActual.dieta.refa1}</p>
+<p>Almuerzo: ${pacienteActual.dieta.almuerzo}</p>
+<p>Refa: ${pacienteActual.dieta.refa2}</p>
+<p>Cena: ${pacienteActual.dieta.cena}</p>
+
+</div>
+
+<div class="card">
+
+<h3>Registrar comida</h3>
+
+<button onclick="marcar('desayuno')">Desayuno</button>
+<button onclick="marcar('refa1')">Refa</button>
+<button onclick="marcar('almuerzo')">Almuerzo</button>
+<button onclick="marcar('refa2')">Refa</button>
+<button onclick="marcar('cena')">Cena</button>
+
+</div>
+
+<div class="card">
+
+<h3>Pedir comida preparada</h3>
+
+<input id="comida" placeholder="Qué comida deseas">
+<input id="direccion" placeholder="Dirección de entrega">
+
+<button onclick="pedido()">Pedir</button>
+
+</div>
+
+`
+
+}
+
+function marcar(tipo){
+
+if(pacienteActual.comidas[tipo]) return
+
+pacienteActual.comidas[tipo]=true
+
+let total=Object.values(pacienteActual.comidas).filter(v=>v).length
+
+pacienteActual.progreso=total*20
+
+if(total==5){
+
 pacienteActual.racha++
-
-document.getElementById("medalla").innerHTML="<div class='badge'>🏅 Meta completada</div>"
+alert("Día completado 🔥")
 
 }
 
 guardar()
 
-actualizarBarra()
-grafica()
+panelPaciente()
 
 }
 
-function actualizarBarra(){
+function pedido(){
 
-let b=document.getElementById("barra")
+let comida=document.getElementById("comida").value
+let dir=document.getElementById("direccion").value
 
-if(b){
-
-b.style.width=pacienteActual.progreso+"%"
-b.innerText=pacienteActual.progreso+"%"
+alert("Pedido confirmado de "+comida+" llegará a "+dir)
 
 }
 
-}
+function verPaciente(i){
 
-function dieta(cal){
+let p=pacientes[i]
 
-if(cal<1800)
+app.innerHTML=`
 
-return "Desayuno: Yogurt + fruta<br>Almuerzo: Pollo + ensalada<br>Cena: Pescado + verduras"
+<div class="card">
 
-else
+<button onclick="dashboard()">⬅ Volver</button>
 
-return "Desayuno: Huevos + avena<br>Almuerzo: Pollo + arroz<br>Cena: Salmón + ensalada"
+<h2>${p.nombre}</h2>
+
+<p>Edad: ${p.edad}</p>
+<p>Peso: ${p.peso}</p>
+<p>Altura: ${p.altura}</p>
+<p>Objetivo: ${p.objetivo}</p>
+
+<p>Progreso: ${p.progreso}%</p>
+
+</div>
+
+`
 
 }
 
 function ranking(){
 
-let orden=[...pacientes].sort((a,b)=>b.puntos-a.puntos)
+let orden=[...pacientes].sort((a,b)=>b.progreso-a.progreso)
 
 let html="<div class='card'><h2>Ranking</h2>"
 
 orden.forEach(p=>{
 
-html+=`<div class="rank">${p.nombre} - ${p.puntos} pts</div>`
+html+=`<p>${p.nombre} - ${p.progreso}%</p>`
 
 })
 
@@ -456,61 +582,13 @@ app.innerHTML=`
 
 <h2>Reto semanal</h2>
 
-Completa 7 días seguidos
+Completa todas tus comidas durante 7 días seguidos.
 
-<br>
-
-Premio: 100 puntos
+Premio: +100 puntos.
 
 </div>
 
 `
-
-}
-
-function pedido(){
-
-alert("Pedido confirmado 🍱 llegará mañana")
-
-}
-
-function grafica(){
-
-let c=document.getElementById("grafica")
-
-if(!c)return
-
-let ctx=c.getContext("2d")
-
-ctx.clearRect(0,0,300,200)
-
-ctx.beginPath()
-
-ctx.moveTo(0,200)
-
-pacienteActual.historial.forEach((v,i)=>{
-
-ctx.lineTo(i*30,200-(v*2))
-
-})
-
-ctx.strokeStyle="#4CAF50"
-
-ctx.stroke()
-
-}
-
-function exportar(){
-
-window.print()
-
-}
-
-function verPaciente(i){
-
-pacienteActual=pacientes[i]
-
-panelPaciente()
 
 }
 
