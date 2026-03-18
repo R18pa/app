@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <meta charset="UTF-8">
@@ -19,7 +18,6 @@ input,select{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;wid
 .dark{background:#121212;color:white}
 .dark .card{background:#1e1e1e}
 </style>
-
 </head>
 
 <body>
@@ -37,10 +35,8 @@ input,select{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;wid
 <button onclick="reto()">🔥</button>
 </div>
 
-<!-- 🔥 FIREBASE COMPAT -->
-
+<!-- FIREBASE -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
@@ -50,7 +46,8 @@ authDomain: "nutritrack-e6f2a.firebaseapp.com",
 projectId: "nutritrack-e6f2a",
 storageBucket: "nutritrack-e6f2a.firebasestorage.app",
 messagingSenderId: "341438034576",
-appId: "1:341438034576:web:95c9695295e89dd986de15"
+appId: "1:341438034576:web:95c9695295e89dd986de15",
+measurementId: "G-VJTN170P57"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -59,10 +56,29 @@ const db = firebase.firestore();
 
 <script>
 let pacientes=JSON.parse(localStorage.getItem("pacientes"))||[]
+let nutricionistas=JSON.parse(localStorage.getItem("nutricionistas"))||[]
 let pacienteActual=null
 
 function guardar(){
 localStorage.setItem("pacientes",JSON.stringify(pacientes))
+localStorage.setItem("nutricionistas",JSON.stringify(nutricionistas))
+}
+
+function cargarPacientesFirebase(){
+
+db.collection("pacientes").get()
+.then(snapshot=>{
+
+pacientes=[]
+
+snapshot.forEach(doc=>{
+pacientes.push(doc.data())
+})
+
+guardar()
+console.log("Pacientes cargados Firebase")
+
+})
 }
 
 function calcularCalorias(peso,altura,edad,objetivo){
@@ -89,14 +105,24 @@ app.innerHTML=`
 <div class="card">
 <button onclick="inicio()">⬅</button>
 <h2>Login Nutricionista</h2>
-<button onclick="dashboard()">Entrar</button>
+<input id="userNutri">
+<input id="passNutri" type="password">
+<button onclick="entrarNutri()">Entrar</button>
 </div>`
+}
+
+function entrarNutri(){
+dashboard()
 }
 
 function dashboard(){
 let lista=""
-pacientes.forEach(p=>{
-lista+=`<div class="card"><b>${p.nombre}</b><br>${p.progreso}% progreso</div>`
+pacientes.forEach((p,i)=>{
+lista+=`
+<div class="card">
+<b>${p.nombre}</b><br>
+${p.progreso}% progreso
+</div>`
 })
 
 app.innerHTML=`
@@ -104,12 +130,12 @@ app.innerHTML=`
 
 <div class="card">
 <h3>Crear paciente</h3>
-<input id="nombre" placeholder="Nombre completo">
-<input id="usuario" placeholder="Usuario del paciente">
-<input id="password" placeholder="Contraseña del paciente">
-<input id="edad" placeholder="Edad en años">
-<input id="peso" placeholder="Peso en kg">
-<input id="altura" placeholder="Altura en cm">
+<input id="nombre" placeholder="Nombre">
+<input id="usuario" placeholder="Usuario">
+<input id="password" placeholder="Contraseña">
+<input id="edad" placeholder="Edad">
+<input id="peso" placeholder="Peso">
+<input id="altura" placeholder="Altura">
 <select id="objetivo">
 <option>Bajar peso</option>
 <option>Mantener</option>
@@ -118,28 +144,21 @@ app.innerHTML=`
 <button onclick="crearPaciente()">Crear</button>
 </div>
 
-${lista}`
+${lista}
+`
 }
 
 function crearPaciente(){
 
-let nombreVal=document.getElementById("nombre").value
-let userVal=document.getElementById("usuario").value
-let passVal=document.getElementById("password").value
-let edadVal=document.getElementById("edad").value
-let pesoVal=document.getElementById("peso").value
-let alturaVal=document.getElementById("altura").value
-let objetivoVal=document.getElementById("objetivo").value
-
 let p={
-nombre:nombreVal,
-usuario:userVal,
-password:passVal,
-edad:edadVal,
-peso:pesoVal,
-altura:alturaVal,
-objetivo:objetivoVal,
-calorias:calcularCalorias(pesoVal,alturaVal,edadVal,objetivoVal),
+nombre:nombre.value,
+usuario:usuario.value,
+password:password.value,
+edad:edad.value,
+peso:peso.value,
+altura:altura.value,
+objetivo:objetivo.value,
+calorias:calcularCalorias(peso.value,altura.value,edad.value,objetivo.value),
 progreso:0,
 racha:0
 }
@@ -148,8 +167,6 @@ pacientes.push(p)
 guardar()
 
 db.collection("pacientes").add(p)
-.then(()=>alert("Paciente creado en Firebase ✅"))
-.catch(()=>alert("Error Firebase"))
 
 dashboard()
 }
@@ -166,10 +183,17 @@ app.innerHTML=`
 }
 
 function entrarPaciente(){
-let u=document.getElementById("userPaciente").value
-let p=document.getElementById("passPaciente").value
-pacienteActual=pacientes.find(x=>x.usuario==u && x.password==p)
-if(!pacienteActual){alert("Credenciales incorrectas");return}
+
+let u=userPaciente.value
+let c=passPaciente.value
+
+pacienteActual=pacientes.find(p=>p.usuario==u && p.password==c)
+
+if(!pacienteActual){
+alert("Usuario o contraseña incorrectos")
+return
+}
+
 panelPaciente()
 }
 
@@ -189,20 +213,27 @@ ${pacienteActual.progreso}%
 function ranking(){
 let orden=[...pacientes].sort((a,b)=>b.progreso-a.progreso)
 let html="<div class='card'><h2>Ranking</h2>"
-orden.forEach(p=>html+=`<p>${p.nombre} - ${p.progreso}%</p>`)
+orden.forEach(p=>{
+html+=`<p>${p.nombre} - ${p.progreso}%</p>`
+})
 html+="</div>"
 app.innerHTML=html
 }
 
 function reto(){
-app.innerHTML=`<div class="card"><h2>Reto semanal</h2>Completa tus comidas 7 días seguidos 🔥</div>`
+app.innerHTML=`
+<div class="card">
+<h2>Reto semanal</h2>
+Completa tus comidas 7 días seguidos 🔥
+</div>`
 }
 
 function modoOscuro(){
 document.body.classList.toggle("dark")
 }
 
-inicio()
+cargarPacientesFirebase()
+setTimeout(inicio,800)
 </script>
 
 </body>
