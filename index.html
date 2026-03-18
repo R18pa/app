@@ -76,9 +76,18 @@ pacientes.push(doc.data())
 })
 
 guardar()
+
 console.log("Pacientes cargados Firebase")
 
+// ⭐ AQUI ARRANCA LA APP YA CON DATOS
+inicio()
+
 })
+.catch(()=>{
+alert("Error conectando Firebase")
+inicio()
+})
+
 }
 
 function calcularCalorias(peso,altura,edad,objetivo){
@@ -233,7 +242,6 @@ document.body.classList.toggle("dark")
 }
 
 cargarPacientesFirebase()
-setTimeout(inicio,800)
 </script>
 
 </body>
