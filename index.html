@@ -86,8 +86,8 @@ function inicio(){
 app.innerHTML=`
 <div class="card" style="text-align:center;">
 <h2>Bienvenido</h2>
-<button onclick="pantallaPago('nutricionista')">Soy Nutricionista</button>
-<button onclick="pantallaPago('paciente')">Soy Paciente</button>
+<button onclick="loginNutri()">Soy Nutricionista</button>
+<button onclick="loginPaciente()">Soy Paciente</button>
 </div>`
 }
 
@@ -109,10 +109,12 @@ app.innerHTML=`
 function registrarNutri(){
 let u=document.getElementById("nuevoUserNutri").value
 let p=document.getElementById("nuevoPassNutri").value
-nutricionistas.push({user:u,pass:p})
-guardar()
-alert("Nutricionista registrado ✅\nUsuario: "+u+"\nContraseña: "+p)
-loginNutri()
+
+// Guardamos temporal
+localStorage.setItem("tempNutri", JSON.stringify({user:u, pass:p}))
+
+// 👉 Enviamos a pago
+pantallaPago("nutricionista","registro")
 }
 
 function entrarNutri(){
@@ -156,6 +158,7 @@ ${lista}`
 }
 
 function crearPaciente(){
+
 let nombreVal=document.getElementById("nombre").value
 let usuarioVal=document.getElementById("usuario").value
 let passVal=document.getElementById("password").value
@@ -163,7 +166,9 @@ let edadVal=document.getElementById("edad").value
 let pesoVal=document.getElementById("peso").value
 let alturaVal=document.getElementById("altura").value
 let objetivoVal=document.getElementById("objetivo").value
-let p={
+
+// Guardamos temporalmente el paciente
+let nuevoPaciente={
 nombre:nombreVal,
 usuario:usuarioVal,
 password:passVal,
@@ -181,10 +186,12 @@ nivel:1,
 notificaciones:[],
 nutri:nutriActual.user
 }
-pacientes.push(p)
-guardar()
-alert("Paciente creado correctamente ✅")
-dashboard()
+
+// 👉 Guardamos temporalmente antes de pagar
+localStorage.setItem("tempPaciente", JSON.stringify(nuevoPaciente))
+
+// 👉 Llamamos pago
+pantallaPago("paciente","nutri")
 }
 
 function crearDietaSemanal(usuario){
@@ -298,8 +305,8 @@ let dir = prompt("Ingresa la dirección de entrega")
 let pago = prompt("Pago: efectivo o tarjeta")
 if(pago.toLowerCase()=="efectivo"){
 let billete = parseFloat(prompt("Con cuánto pagarás?"))
-alert("Pedido confirmado. Lleva "+billete+" para el pago")
-}else{alert("Pedido confirmado. Pago con tarjeta al momento de entrega")}
+alert("Pedido confirmado. llevaremos cambio para "+billete+" gracias por preferirnos")
+}else{alert("Pedido confirmado. Pago con tarjeta al momento de entrega, gracias por preferirnos")}
 }
 
 function verNotificaciones(usuario){
@@ -346,7 +353,7 @@ Completa todas tus comidas durante 7 días seguidos.
 
 function modoOscuro(){document.body.classList.toggle("dark")}
 
-function pantallaPago(tipo){
+function pantallaPago(tipo, origen="inicio"){
 app.innerHTML=`
 <div class="card" style="text-align:center; padding:30px; background:#f7f7f7; box-shadow:0 4px 15px rgba(0,0,0,0.2); border-radius:12px;">
 <h2>Pasarela de pago 💳</h2>
@@ -359,18 +366,48 @@ app.innerHTML=`
 <input id="numTarjeta" placeholder="Número de tarjeta (12 dígitos)" maxlength="12" style="width:80%; padding:10px; margin:5px; border-radius:6px;"><br>
 <input id="fechaVenc" placeholder="MM/AA" style="width:40%; padding:10px; margin:5px; border-radius:6px;"><br>
 <input id="cvv" placeholder="CVV" maxlength="3" style="width:20%; padding:10px; margin:5px; border-radius:6px;"><br><br>
-<button onclick="procesarPago('${tipo}')" style="padding:12px 20px; border:none; border-radius:6px; background:#4CAF50; color:white; cursor:pointer;">Procesar pago 💳</button>
+<button onclick="procesarPago('${tipo}','${origen}')" 
+style="padding:12px 20px; border:none; border-radius:6px; background:#4CAF50; color:white; cursor:pointer;">
+Procesar pago 💳
+</button>
 </div>`
 }
 
-function procesarPago(tipo){
+function procesarPago(tipo, origen){
+
 let tarjeta=document.getElementById("numTarjeta").value
 let fecha=document.getElementById("fechaVenc").value
 let cvv=document.getElementById("cvv").value
-if(tarjeta.length!=12 || isNaN(tarjeta)){alert("Número de tarjeta inválido ❌ (debe tener 12 dígitos)"); return}
+
+if(tarjeta.length!=12 || isNaN(tarjeta)){alert("Número de tarjeta inválido ❌"); return}
 if(cvv.length!=3 || isNaN(cvv)){alert("CVV inválido ❌"); return}
-if(!fecha.match(/^\d{2}\/\d{2}$/)){alert("Fecha de vencimiento inválida ❌ (MM/AA)"); return}
-alert("✅ Su pago ha sido procesado")
+if(!fecha.match(/^\d{2}\/\d{2}$/)){alert("Fecha inválida ❌"); return}
+
+alert("✅ Pago procesado")
+
+// 👉 NUEVO: registro nutricionista
+if(origen=="registro" && tipo=="nutricionista"){
+let temp = JSON.parse(localStorage.getItem("tempNutri"))
+nutricionistas.push(temp)
+guardar()
+localStorage.removeItem("tempNutri")
+alert("Nutricionista registrado ✅")
+loginNutri()
+return
+}
+
+// 👉 ya lo tienes (paciente desde nutri)
+if(origen=="nutri"){
+let temp = JSON.parse(localStorage.getItem("tempPaciente"))
+pacientes.push(temp)
+guardar()
+localStorage.removeItem("tempPaciente")
+alert("Paciente creado correctamente ✅")
+dashboard()
+return
+}
+
+// 👉 login normal
 if(tipo=="nutricionista") loginNutri()
 else loginPaciente()
 }
