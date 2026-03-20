@@ -319,6 +319,22 @@ app.innerHTML=`
 </div>`
 }
 
+function olvidePass(tipo){
+  app.innerHTML = `
+  <div class="card">
+    <button onclick="inicio()">⬅ Volver</button>
+    <h2>Recuperar contraseña</h2>
+
+    <input id="userRecuperar" placeholder="Usuario">
+    <input id="nuevaPass" type="password" placeholder="Nueva contraseña">
+
+    <button onclick="cambiarPassword('${tipo}')">
+      Cambiar contraseña
+    </button>
+  </div>
+  `
+}
+
 function entrarPaciente(){
 let u=document.getElementById("userPaciente").value
 let p=document.getElementById("passPaciente").value
