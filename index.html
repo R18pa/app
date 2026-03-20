@@ -56,6 +56,29 @@ if(objetivo=="Subir peso") base+=400
 return Math.round(base)
 }
 
+function formatearFecha(input){
+  let valor = input.value.replace(/\D/g,'') // solo números
+
+  if(valor.length > 4) valor = valor.slice(0,4)
+
+  // Validar mes cuando hay al menos 2 dígitos
+  if(valor.length >= 2){
+    let mes = parseInt(valor.slice(0,2))
+
+    if(mes < 1) mes = 1
+    if(mes > 12) mes = 12
+
+    valor = mes.toString().padStart(2,'0') + valor.slice(2)
+  }
+
+  // Formato MM/AA
+  if(valor.length >= 4){
+    input.value = valor.slice(0,2) + "/" + valor.slice(2)
+  }else{
+    input.value = valor
+  }
+}
+
 function diaActual(){
 let dias=["domingo","lunes","martes","miercoles","jueves","viernes","sabado"]
 return dias[new Date().getDay()]
@@ -99,11 +122,48 @@ app.innerHTML=`
 <input id="userNutri" placeholder="Usuario">
 <input id="passNutri" type="password" placeholder="Contraseña">
 <button onclick="entrarNutri()">Entrar</button>
+
+<p style="cursor:pointer;color:blue;" onclick="olvidePass('nutricionista')">
+¿Olvidaste tu contraseña?
+</p>
 <h3>Registrarme</h3>
 <input id="nuevoUserNutri" placeholder="Usuario">
 <input id="nuevoPassNutri" type="password" placeholder="Contraseña">
 <button onclick="registrarNutri()">Registrar</button>
 </div>`
+}
+function cambiarPassword(tipo){
+  let user = document.getElementById("userRecuperar").value
+  let nueva = document.getElementById("nuevaPass").value
+
+  if(!user || !nueva){
+    alert("Completa todos los campos")
+    return
+  }
+
+  if(tipo == "paciente"){
+    let p = pacientes.find(x => x.usuario == user)
+    if(!p){
+      alert("Usuario no encontrado ❌")
+      return
+    }
+    p.password = nueva
+  }
+
+  if(tipo == "nutricionista"){
+    let n = nutricionistas.find(x => x.user == user)
+    if(!n){
+      alert("Usuario no encontrado ❌")
+      return
+    }
+    n.pass = nueva
+  }
+
+  guardar()
+  alert("Contraseña actualizada ✅")
+
+  if(tipo == "paciente") loginPaciente()
+  else loginNutri()
 }
 
 function registrarNutri(){
@@ -218,6 +278,9 @@ app.innerHTML=`
 <input id="userPaciente" placeholder="Usuario">
 <input id="passPaciente" type="password" placeholder="Contraseña">
 <button onclick="entrarPaciente()">Entrar</button>
+<p style="cursor:pointer;color:blue;" onclick="olvidePass('paciente')">
+¿Olvidaste tu contraseña?
+</p>
 </div>`
 }
 
@@ -232,7 +295,7 @@ panelPaciente()
 function avatar(){
 let p=pacienteActual.progreso
 if(p>=100) return "🏆"
-if(p>=80) return "🤖"
+if(p>=80) return "🏋🏻‍♂️"
 if(p>=60) return "🦵🏻"
 if(p>=40) return "💪"
 return "🙂"
@@ -285,13 +348,23 @@ ${pacienteActual.progreso}%</div></div>
 </div>
 <div class="card">
 <h3>Pedir comida</h3>
+
+<select id="tipoComida">
+  <option value="desayuno">🍳 Desayuno</option>
+  <option value="refa1">🍎 Refa 1</option>
+  <option value="almuerzo">🍛 Almuerzo</option>
+  <option value="refa2">🥪 Refa 2</option>
+  <option value="cena">🌙 Cena</option>
+</select>
+
 <input id="direccion" placeholder="Dirección">
+
 <button onclick="pedido()">Pedir</button>
 </div>`
 }
 
 function pedido(){
-let tipo = prompt("Qué deseas pedir: desayuno, refa1, almuerzo, refa2, cena")
+let tipo = document.getElementById("tipoComida").value
 let hoy = diaActual()
 let comida = pacienteActual.dietasemanal[hoy][tipo]
 let quiere = confirm("La dieta sugiere: "+comida+"\n¿La deseas?")
@@ -364,7 +437,9 @@ app.innerHTML=`
 <option value="platinum">Platinum</option>
 </select><br><br>
 <input id="numTarjeta" placeholder="Número de tarjeta (12 dígitos)" maxlength="12" style="width:80%; padding:10px; margin:5px; border-radius:6px;"><br>
-<input id="fechaVenc" placeholder="MM/AA" style="width:40%; padding:10px; margin:5px; border-radius:6px;"><br>
+<input id="fechaVenc" placeholder="MM/AA" maxlength="4" inputmode="numeric"
+oninput="formatearFecha(this)" 
+style="width:40%; padding:10px; margin:5px; border-radius:6px;"><br>
 <input id="cvv" placeholder="CVV" maxlength="3" style="width:20%; padding:10px; margin:5px; border-radius:6px;"><br><br>
 <button onclick="procesarPago('${tipo}','${origen}')" 
 style="padding:12px 20px; border:none; border-radius:6px; background:#4CAF50; color:white; cursor:pointer;">
