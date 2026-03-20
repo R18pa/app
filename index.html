@@ -166,6 +166,41 @@ function cambiarPassword(tipo){
   else loginNutri()
 }
 
+function cambiarPassword(tipo){
+  let user = document.getElementById("userRecuperar").value
+  let nueva = document.getElementById("nuevaPass").value
+
+  if(!user || !nueva){
+    alert("Completa todos los campos")
+    return
+  }
+
+  if(tipo == "paciente"){
+    let p = pacientes.find(x => x.usuario == user)
+    if(!p){
+      alert("Usuario no encontrado ❌")
+      return
+    }
+    p.password = nueva
+  }
+
+  if(tipo == "nutricionista"){
+    let n = nutricionistas.find(x => x.user == user)
+    if(!n){
+      alert("Usuario no encontrado ❌")
+      return
+    }
+    n.pass = nueva
+  }
+
+  guardar()
+  alert("Contraseña actualizada ✅")
+
+  if(tipo == "paciente") loginPaciente()
+  else loginNutri()
+}
+
+
 function registrarNutri(){
 let u=document.getElementById("nuevoUserNutri").value
 let p=document.getElementById("nuevoPassNutri").value
@@ -358,29 +393,41 @@ ${pacienteActual.progreso}%</div></div>
 </select>
 
 <input id="direccion" placeholder="Dirección">
+<select id="metodoPago">
+  <option value="efectivo">💵 Efectivo</option>
+  <option value="tarjeta">💳 Tarjeta</option>
+</select>
 
 <button onclick="pedido()">Pedir</button>
 </div>`
 }
 
 function pedido(){
-let tipo = document.getElementById("tipoComida").value
-let hoy = diaActual()
-let comida = pacienteActual.dietasemanal[hoy][tipo]
-let quiere = confirm("La dieta sugiere: "+comida+"\n¿La deseas?")
-if(!quiere){
-pacienteActual.notificaciones.push({dia:hoy, tipo})
-guardar()
-alert("Notificado al nutricionista ✅")
-return
+  let tipo = document.getElementById("tipoComida").value
+  let hoy = diaActual()
+
+  // 🔥 evita error si no hay dieta
+  let comida = pacienteActual.dietasemanal[hoy]?.[tipo] || "Sin dieta asignada"
+
+  let quiere = confirm("La dieta sugiere: "+comida+"\n¿La deseas?")
+  
+  if(!quiere){
+    pacienteActual.notificaciones.push({dia:hoy, tipo})
+    guardar()
+    alert("Notificado al nutricionista ✅")
+    return
+  }
+
+  let pago = document.getElementById("metodoPago").value
+
+  if(pago == "efectivo"){
+    let billete = parseFloat(prompt("¿Con cuánto pagarás?"))
+    alert("Pedido confirmado. Llevaremos cambio para Q"+billete+" gracias por preferirnos")
+  }else{
+    alert("Pedido confirmado. Pago con tarjeta al momento de entrega, gracias por preferirnos")
+  }
 }
-let dir = prompt("Ingresa la dirección de entrega")
-let pago = prompt("Pago: efectivo o tarjeta")
-if(pago.toLowerCase()=="efectivo"){
-let billete = parseFloat(prompt("Con cuánto pagarás?"))
-alert("Pedido confirmado. llevaremos cambio para "+billete+" gracias por preferirnos")
-}else{alert("Pedido confirmado. Pago con tarjeta al momento de entrega, gracias por preferirnos")}
-}
+
 
 function verNotificaciones(usuario){
 let p=pacientes.find(x=>x.usuario==usuario)
