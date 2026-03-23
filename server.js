@@ -16,6 +16,7 @@ app.post('/api/claude', async (req, res) => {
   if (!apiKey) {
     return res.status(500).json({ error: 'API Key no configurada en el servidor.' })
   }
+  console.log('API Key primeros 20 chars:', apiKey.substring(0, 20))
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
