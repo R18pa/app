@@ -12,11 +12,7 @@ app.use(express.static(path.join(__dirname, 'public')))
 // ===== PROXY SEGURO PARA ANTHROPIC API =====
 app.post('/api/claude', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY
-
-  if (!apiKey) {
-    return res.status(500).json({ error: 'API Key no configurada en el servidor.' })
-  }
-  console.log('API Key primeros 20 chars:', apiKey.substring(0, 20))
+  if (!apiKey) return res.status(500).json({ error: 'API Key no configurada en el servidor.' })
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -33,17 +29,14 @@ app.post('/api/claude', async (req, res) => {
         messages: req.body.messages
       })
     })
-
     const data = await response.json()
     res.json(data)
-
   } catch (error) {
     console.error('Error al llamar Anthropic:', error)
     res.status(500).json({ error: 'Error al conectar con la API de AI.' })
   }
 })
 
-// Ruta fallback para SPA
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'))
 })

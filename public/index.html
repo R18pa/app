@@ -6,6 +6,87 @@
 <title>NutriTrack Ultra</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- ============================================================
+     🔥 FIREBASE SDK
+     Reemplaza los valores de firebaseConfig con los tuyos desde:
+     https://console.firebase.google.com → Tu proyecto → Configuración
+     ============================================================ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getDatabase, ref, set, get, update, onValue, push, remove
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  // ⚠️ REEMPLAZA ESTOS VALORES CON LOS DE TU PROYECTO FIREBASE
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtmTeHLQWe14H20XUtu90BsoSJIbGEhHU",
+    authDomain: "nutritrack-e6f2a.firebaseapp.com",
+    databaseURL: "https://nutritrack-e6f2a-default-rtdb.firebaseio.com",
+    projectId: "nutritrack-e6f2a",
+    storageBucket: "nutritrack-e6f2a.firebasestorage.app",
+    messagingSenderId: "341438034576",
+    appId: "1:341438034576:web:95c9695295e89dd986de15",
+    measurementId: "G-VJTN170P57"
+  };
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const db = getDatabase(firebaseApp);
+
+  // ===== CAPA DE BASE DE DATOS =====
+  // Exponer funciones globalmente para el código legacy
+  window._db = {
+    // --- Guardar nutricionista ---
+    async guardarNutri(nutri) {
+      await set(ref(db, `nutricionistas/${nutri.user}`), nutri);
+    },
+    // --- Obtener nutricionista ---
+    async getNutri(user) {
+      const snap = await get(ref(db, `nutricionistas/${user}`));
+      return snap.exists() ? snap.val() : null;
+    },
+    // --- Guardar paciente ---
+    async guardarPaciente(paciente) {
+      await set(ref(db, `pacientes/${paciente.usuario}`), paciente);
+    },
+    // --- Obtener paciente ---
+    async getPaciente(usuario) {
+      const snap = await get(ref(db, `pacientes/${usuario}`));
+      return snap.exists() ? snap.val() : null;
+    },
+    // --- Obtener todos los pacientes de un nutricionista ---
+    async getPacientesDeNutri(nutriUser) {
+      const snap = await get(ref(db, 'pacientes'));
+      if (!snap.exists()) return [];
+      const todos = snap.val();
+      return Object.values(todos).filter(p => p.nutri === nutriUser);
+    },
+    // --- Obtener todos los pacientes (para ranking) ---
+    async getTodosPacientes() {
+      const snap = await get(ref(db, 'pacientes'));
+      if (!snap.exists()) return [];
+      return Object.values(snap.val());
+    },
+    // --- Escuchar cambios en tiempo real en un paciente ---
+    escucharPaciente(usuario, callback) {
+      return onValue(ref(db, `pacientes/${usuario}`), snap => {
+        if (snap.exists()) callback(snap.val());
+      });
+    },
+    // --- Escuchar cambios en tiempo real en pacientes de un nutri ---
+    escucharPacientesNutri(nutriUser, callback) {
+      return onValue(ref(db, 'pacientes'), snap => {
+        if (!snap.exists()) { callback([]); return; }
+        const todos = snap.val();
+        callback(Object.values(todos).filter(p => p.nutri === nutriUser));
+      });
+    }
+  };
+
+  window._dbReady = true;
+  window.dispatchEvent(new Event('dbReady'));
+</script>
+
 <style>
 *{box-sizing:border-box;}
 body{font-family:'Nunito',Arial,sans-serif;margin:0;background:#f2f2f2;}
@@ -24,6 +105,11 @@ input,select{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;wid
 .dark .nav{background:#1e1e1e;color:white;}
 .dark input,.dark select{background:#2a2a2a;color:white;border-color:#444;}
 .avatar{font-size:60px;text-align:center;}
+.sync-badge{background:#e8f5e9;color:#2e7d32;border-radius:20px;font-size:11px;font-weight:700;padding:3px 10px;margin-left:6px;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-size:18px;font-weight:700;color:#4CAF50;gap:12px;}
+.spinner{width:40px;height:40px;border:4px solid #e0e0e0;border-top-color:#4CAF50;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ===== PLANES ===== */
 .planes-grid{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
@@ -44,11 +130,8 @@ input,select{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;wid
 .btn-plan-estandar{background:#FFA726;color:white;}
 .btn-plan-premium{background:#E8EAF6;color:#3949AB;}
 .plan-card.selected .btn-plan{background:#4CAF50;color:white;}
-
-/* badge seleccionado */
 .check-selected{position:absolute;top:54px;right:14px;background:#4CAF50;color:white;border-radius:50%;width:24px;height:24px;display:none;align-items:center;justify-content:center;font-size:14px;font-weight:900;}
 .plan-card.selected .check-selected{display:flex;}
-
 .dark .plan-card{background:#1e1e1e;color:white;}
 .dark .plan-features{color:#ccc;}
 .dark .plan-nombre,.dark .plan-precio{color:white;}
@@ -75,92 +158,114 @@ input,select{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;wid
 <body>
 
 <header>
-  <h2>🥗 NutriTrack</h2>
+  <h2>🥗 NutriTrack <span class="sync-badge" id="sync-badge" style="display:none">🔴 Sin Firebase</span></h2>
   <div class="header-btns">
     <button onclick="modoOscuro()">🌙</button>
   </div>
 </header>
 
-<div class="container" id="app"></div>
+<div class="container" id="app">
+  <div class="loading-overlay" id="loading-inicial">
+    <div class="spinner"></div>
+    <span>Conectando con Firebase...</span>
+  </div>
+</div>
 
 <div class="nav">
-<button onclick="inicio()">🏠</button>
-<button onclick="ranking()">🏆</button>
-<button onclick="reto()">🔥</button>
+  <button onclick="inicio()">🏠</button>
+  <button onclick="ranking()">🏆</button>
+  <button onclick="reto()">🔥</button>
 </div>
 
 <script>
+// ===== ESTADO GLOBAL =====
+let pacienteActual = null
+let nutriActual = null
+let planSeleccionado = null
+let _unsubscribePaciente = null   // listener tiempo real paciente
+let _unsubscribeNutri = null      // listener tiempo real dashboard nutri
+let chatHistory = []
 
-
-let pacientes=JSON.parse(localStorage.getItem("pacientes"))||[]
-let nutricionistas=JSON.parse(localStorage.getItem("nutricionistas"))||[]
-let pacienteActual=null
-let nutriActual=null
-let planSeleccionado=null
-
-function guardar(){
-localStorage.setItem("pacientes",JSON.stringify(pacientes))
-localStorage.setItem("nutricionistas",JSON.stringify(nutricionistas))
+// ===== ESPERAR A QUE FIREBASE ESTÉ LISTO =====
+function esperarDB() {
+  return new Promise(resolve => {
+    if (window._dbReady) { resolve(); return; }
+    window.addEventListener('dbReady', resolve, { once: true });
+  });
 }
 
-function calcularCalorias(peso,altura,edad,objetivo){
-peso=parseFloat(peso);altura=parseFloat(altura);edad=parseFloat(edad)
-let base=(peso*10)+(altura*6.25)-(edad*5)+5
-if(objetivo=="Bajar peso") base-=400
-if(objetivo=="Subir peso") base+=400
-return Math.round(base)
+// ===== LOADER =====
+function mostrarLoader(msg = "Cargando...") {
+  let l = document.getElementById("loading-inicial")
+  if (!l) {
+    l = document.createElement("div")
+    l.id = "loading-temporal"
+    l.className = "loading-overlay"
+    document.body.appendChild(l)
+  }
+  l.innerHTML = `<div class="spinner"></div><span>${msg}</span>`
+  l.style.display = "flex"
+}
+function ocultarLoader() {
+  ["loading-inicial","loading-temporal"].forEach(id => {
+    let el = document.getElementById(id)
+    if (el) el.style.display = "none"
+  })
 }
 
-function formatearFecha(input){
-let valor=input.value.replace(/\D/g,'')
-if(valor.length>4) valor=valor.slice(0,4)
-if(valor.length>=2){
-let mes=parseInt(valor.slice(0,2))
-if(mes<1) mes=1
-if(mes>12) mes=12
-valor=mes.toString().padStart(2,'0')+valor.slice(2)
-}
-if(valor.length>=4) input.value=valor.slice(0,2)+"/"+valor.slice(2)
-else input.value=valor
+// ===== LIMPIAR LISTENERS ANTERIORES =====
+function limpiarListeners() {
+  if (_unsubscribePaciente) { _unsubscribePaciente(); _unsubscribePaciente = null }
+  if (_unsubscribeNutri) { _unsubscribeNutri(); _unsubscribeNutri = null }
 }
 
-function diaActual(){
-let dias=["domingo","lunes","martes","miercoles","jueves","viernes","sabado"]
-return dias[new Date().getDay()]
+// ===== UTILS =====
+function calcularCalorias(peso, altura, edad, objetivo) {
+  peso = parseFloat(peso); altura = parseFloat(altura); edad = parseFloat(edad)
+  let base = (peso * 10) + (altura * 6.25) - (edad * 5) + 5
+  if (objetivo == "Bajar peso") base -= 400
+  if (objetivo == "Subir peso") base += 400
+  return Math.round(base)
 }
 
-function reiniciarDia(){
-if(!pacienteActual) return
-let hoy=new Date().toDateString()
-if(pacienteActual.fecha!=hoy){
-pacienteActual.fecha=hoy
-pacienteActual.comidas={desayuno:false,refa1:false,almuerzo:false,refa2:false,cena:false}
-pacienteActual.progreso=0
-guardar()
-}
-setTimeout(reiniciarDia,60000)
+function formatearFecha(input) {
+  let valor = input.value.replace(/\D/g, '')
+  if (valor.length > 4) valor = valor.slice(0, 4)
+  if (valor.length >= 2) {
+    let mes = parseInt(valor.slice(0, 2))
+    if (mes < 1) mes = 1
+    if (mes > 12) mes = 12
+    valor = mes.toString().padStart(2, '0') + valor.slice(2)
+  }
+  if (valor.length >= 4) input.value = valor.slice(0, 2) + "/" + valor.slice(2)
+  else input.value = valor
 }
 
-function barraRacha(){
-let html=""
-for(let i=1;i<=7;i++){
-if(i<=pacienteActual.racha) html+="🔥 "
-else html+="⬜ "
+function diaActual() {
+  let dias = ["domingo","lunes","martes","miercoles","jueves","viernes","sabado"]
+  return dias[new Date().getDay()]
 }
-return html
+
+function barraRacha() {
+  let html = ""
+  for (let i = 1; i <= 7; i++) {
+    if (i <= pacienteActual.racha) html += "🔥 "
+    else html += "⬜ "
+  }
+  return html
 }
 
 // ===== PLANES =====
-const PLANES={
-  basico:{nombre:"Básico",precio:18,pacientes:"1 a 20",funciones:"básicas",color:"basico"},
-  estandar:{nombre:"Estándar",precio:31,pacientes:"1 a 40",funciones:"básicas + AI",color:"estandar",popular:true},
-  premium:{nombre:"Premium",precio:56,pacientes:"1 a 80",funciones:"avanzadas + AI + Dashboards",color:"premium",extraFeatures:["Dashboard de pacientes para nutricionista"]}
+const PLANES = {
+  basico: {nombre:"Básico",precio:18,pacientes:"1 a 20",funciones:"básicas",color:"basico"},
+  estandar: {nombre:"Estándar",precio:31,pacientes:"1 a 40",funciones:"básicas + AI",color:"estandar",popular:true},
+  premium: {nombre:"Premium",precio:56,pacientes:"1 a 80",funciones:"avanzadas + AI + Dashboards",color:"premium",extraFeatures:["Dashboard de pacientes para nutricionista"]}
 }
 
-function renderPlanes(modo, origen){
+function renderPlanes(modo, origen) {
   return `
   <div class="planes-grid">
-    ${Object.entries(PLANES).map(([key,p])=>`
+    ${Object.entries(PLANES).map(([key,p]) => `
     <div class="plan-card ${planSeleccionado==key?'selected':''}" id="plancard-${key}" onclick="elegirPlan('${key}','${modo}','${origen}')">
       <div class="check-selected">✓</div>
       <div class="plan-tag">Tu primer mes GRATIS</div>
@@ -170,7 +275,7 @@ function renderPlanes(modo, origen){
           <li>+30,000 recetas y plantillas.</li>
           <li>De ${p.pacientes} pacientes.</li>
           <li>Funciones <b>${p.funciones}</b>.</li>
-          ${p.extraFeatures?p.extraFeatures.map(f=>`<li>${f}</li>`).join(""):""}
+          ${p.extraFeatures ? p.extraFeatures.map(f=>`<li>${f}</li>`).join("") : ""}
         </ul>
         <div class="plan-precio">$${p.precio} <span>usd</span>/mes</div>
         <div class="plan-sub">*Pago mensual</div>
@@ -182,22 +287,20 @@ function renderPlanes(modo, origen){
   </div>`
 }
 
-function elegirPlan(key, modo, origen){
-  planSeleccionado=key
-  if(modo=='preview'){
-    // Solo vista de precios, no ir a pago
-    if(document.getElementById("seccion-planes")){
-      document.getElementById("seccion-planes").innerHTML=renderPlanes(modo,origen)
+function elegirPlan(key, modo, origen) {
+  planSeleccionado = key
+  if (modo == 'preview') {
+    if (document.getElementById("seccion-planes")) {
+      document.getElementById("seccion-planes").innerHTML = renderPlanes(modo, origen)
     }
     return
   }
-  // Si está en flujo de registro/pago, ir directo a pasarela
   pantallaPago(modo, origen)
 }
 
-function verPrecios(){
-  planSeleccionado=null
-  app.innerHTML=`
+function verPrecios() {
+  planSeleccionado = null
+  app.innerHTML = `
   <div class="card">
     <button onclick="inicio()">⬅ Volver</button>
     <h2 style="text-align:center">💰 Nuestros Planes</h2>
@@ -206,254 +309,264 @@ function verPrecios(){
   </div>`
 }
 
-function seleccionarPlanYPagar(modo, origen){
-  if(!planSeleccionado){alert("Por favor selecciona un plan ❌");return}
-  pantallaPago(modo,origen)
-}
-
-// ===== FIN PLANES =====
-
-function inicio(){
-app.innerHTML=`
-<div class="card" style="text-align:center;">
-<h2>Bienvenido a NutriTrack 🥗</h2>
-<p style="color:#666">Tu asistente de nutrición inteligente</p>
-<button onclick="loginNutri()">👨‍⚕️ Soy Nutricionista</button>
-<button onclick="loginPaciente()">🙋 Soy Paciente</button>
-<hr style="margin:20px 0;border-color:#eee;">
-<p style="font-size:13px;color:#aaa">¿Quieres conocer nuestros planes? <span style="color:#4CAF50;cursor:pointer;font-weight:700;" onclick="verPrecios()">Ver precios →</span></p>
-</div>`
-}
-
-function loginNutri(){
-app.innerHTML=`
-<div class="card" style="max-width:400px;margin:40px auto;">
-  <button onclick="inicio()" style="background:none;color:#888;font-size:13px;padding:0;margin-bottom:16px;">⬅ Volver</button>
-  <h2 style="text-align:center;margin-bottom:4px;">👨‍⚕️ Nutricionista</h2>
-  <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:20px;">Inicia sesión en tu cuenta</p>
-  <input id="userNutri" placeholder="Usuario" style="width:100%;margin-bottom:10px;">
-  <input id="passNutri" type="password" placeholder="Contraseña" style="width:100%;margin-bottom:6px;">
-  <p style="text-align:right;margin:0 0 16px;"><span style="cursor:pointer;color:#4CAF50;font-size:13px;" onclick="olvidePass('nutricionista')">¿Olvidaste tu contraseña?</span></p>
-  <button onclick="entrarNutri()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Iniciar sesión</button>
-  <hr style="margin:20px 0;border-color:#eee;">
-  <p style="text-align:center;font-size:14px;color:#888;margin:0;">¿No tienes cuenta? <span style="color:#4CAF50;font-weight:700;cursor:pointer;" onclick="registroNutri()">Regístrate aquí</span></p>
-</div>`
-}
-
-function registroNutri(){
-app.innerHTML=`
-<div class="card" style="max-width:400px;margin:40px auto;">
-  <button onclick="loginNutri()" style="background:none;color:#888;font-size:13px;padding:0;margin-bottom:16px;">⬅ Volver al login</button>
-  <h2 style="text-align:center;margin-bottom:4px;">📝 Crear cuenta</h2>
-  <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:20px;">Regístrate como nutricionista</p>
-  <input id="nuevoUserNutri" placeholder="Usuario" style="width:100%;margin-bottom:10px;">
-  <input id="nuevoPassNutri" type="password" placeholder="Contraseña" style="width:100%;margin-bottom:16px;">
-  <button onclick="registrarNutri()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Crear cuenta</button>
-  <hr style="margin:20px 0;border-color:#eee;">
-  <p style="text-align:center;font-size:14px;color:#888;margin:0;">¿Ya tienes cuenta? <span style="color:#4CAF50;font-weight:700;cursor:pointer;" onclick="loginNutri()">Inicia sesión</span></p>
-</div>`
-}
-
-function cambiarPassword(tipo){
-let user=document.getElementById("userRecuperar").value
-let nueva=document.getElementById("nuevaPass").value
-if(!user||!nueva){alert("Completa todos los campos");return}
-if(tipo=="paciente"){
-let p=pacientes.find(x=>x.usuario==user)
-if(!p){alert("Usuario no encontrado ❌");return}
-p.password=nueva
-}
-if(tipo=="nutricionista"){
-let n=nutricionistas.find(x=>x.user==user)
-if(!n){alert("Usuario no encontrado ❌");return}
-n.pass=nueva
-}
-guardar()
-alert("Contraseña actualizada ✅")
-if(tipo=="paciente") loginPaciente()
-else loginNutri()
-}
-
-function registrarNutri(){
-let u=document.getElementById("nuevoUserNutri").value
-let p=document.getElementById("nuevoPassNutri").value
-localStorage.setItem("tempNutri",JSON.stringify({user:u,pass:p}))
-pantallaPlanYPago("nutricionista","registro")
-}
-
-function entrarNutri(){
-let u=document.getElementById("userNutri").value
-let p=document.getElementById("passNutri").value
-let nutri=nutricionistas.find(n=>n.user==u&&n.pass==p)
-if(!nutri){alert("Credenciales incorrectas");return}
-nutriActual=nutri
-dashboard()
-}
-
-function dashboard(){
-let misPacientes=pacientes.filter(p=>p.nutri==nutriActual.user)
-let lista=""
-misPacientes.forEach(p=>{
-lista+=`
-<div class="card">
-<b>${p.nombre}</b> <span style="font-size:12px;color:#888;background:#f0f0f0;padding:2px 8px;border-radius:10px;">${p.plan||'básico'}</span><br>
-${p.progreso}% progreso<br>
-<button onclick="crearDietaSemanal('${p.usuario}')">Dieta semanal</button>
-<button onclick="verNotificaciones('${p.usuario}')">Notificaciones</button>
-<button onclick="verPaciente('${p.usuario}')">Ver</button>
-</div>`})
-
-let dashboardPremium=""
-if(nutriActual.plan=="premium"){
-  dashboardPremium=`<div class="card" id="card-dashboard-nutri">
-    <h2>📊 Dashboard Premium</h2>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-      <div style="flex:1;min-width:120px;background:#e8f5e9;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:28px;font-weight:900;color:#2e7d32">${misPacientes.length}</div>
-        <div style="font-size:12px;color:#666">Pacientes</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:#e3f2fd;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:28px;font-weight:900;color:#1565c0">${misPacientes.length?Math.round(misPacientes.reduce((a,p)=>a+(p.progreso||0),0)/misPacientes.length):0}%</div>
-        <div style="font-size:12px;color:#666">Promedio progreso</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:#fff8e1;border-radius:10px;padding:14px;text-align:center;">
-        <div style="font-size:28px;font-weight:900;color:#f57f17">${misPacientes.length?Math.max(...misPacientes.map(p=>p.racha||0)):0}🔥</div>
-        <div style="font-size:12px;color:#666">Mejor racha</div>
-      </div>
-    </div>
-    <canvas id="grafica-nutri" height="170"></canvas>
-    <h4 style="margin:16px 0 8px">🏅 Mejores rachas</h4>
-    <div id="mejores-rachas"></div>
-    <h4 style="margin:16px 0 8px">⚠️ Necesitan atención</h4>
-    <div id="peores-rachas"></div>
+// ===== INICIO =====
+function inicio() {
+  limpiarListeners()
+  app.innerHTML = `
+  <div class="card" style="text-align:center;">
+    <h2>Bienvenido a NutriTrack 🥗</h2>
+    <p style="color:#666">Tu asistente de nutrición inteligente</p>
+    <p style="font-size:12px;color:#4CAF50;font-weight:700;">🔴 Sincronización en tiempo real con Firebase</p>
+    <button onclick="loginNutri()">👨‍⚕️ Soy Nutricionista</button>
+    <button onclick="loginPaciente()">🙋 Soy Paciente</button>
+    <hr style="margin:20px 0;border-color:#eee;">
+    <p style="font-size:13px;color:#aaa">¿Quieres conocer nuestros planes? <span style="color:#4CAF50;cursor:pointer;font-weight:700;" onclick="verPrecios()">Ver precios →</span></p>
   </div>`
 }
 
-app.innerHTML=`
-${dashboardPremium}
-<div class="card"><h2>Dashboard Nutricionista 👨‍⚕️</h2></div>
-<div class="card">
-<h3>Crear paciente</h3>
-<input id="nombre" placeholder="Nombre">
-<input id="usuario" placeholder="Usuario">
-<input id="password" placeholder="Password">
-<input id="edad" placeholder="Edad">
-<input id="peso" placeholder="Peso">
-<input id="altura" placeholder="Altura">
-<select id="objetivo">
-<option>Bajar peso</option>
-<option>Mantener</option>
-<option>Subir peso</option>
-</select>
-<button onclick="crearPaciente()">Crear</button>
-</div>
-${lista}`
-
-if(nutriActual.plan=="premium") setTimeout(renderDashboardNutri,50)
+// ===== LOGIN NUTRICIONISTA =====
+function loginNutri() {
+  limpiarListeners()
+  app.innerHTML = `
+  <div class="card" style="max-width:400px;margin:40px auto;">
+    <button onclick="inicio()" style="background:none;color:#888;font-size:13px;padding:0;margin-bottom:16px;">⬅ Volver</button>
+    <h2 style="text-align:center;margin-bottom:4px;">👨‍⚕️ Nutricionista</h2>
+    <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:20px;">Inicia sesión en tu cuenta</p>
+    <input id="userNutri" placeholder="Usuario" style="width:100%;margin-bottom:10px;">
+    <input id="passNutri" type="password" placeholder="Contraseña" style="width:100%;margin-bottom:6px;">
+    <p style="text-align:right;margin:0 0 16px;"><span style="cursor:pointer;color:#4CAF50;font-size:13px;" onclick="olvidePass('nutricionista')">¿Olvidaste tu contraseña?</span></p>
+    <button onclick="entrarNutri()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Iniciar sesión</button>
+    <hr style="margin:20px 0;border-color:#eee;">
+    <p style="text-align:center;font-size:14px;color:#888;margin:0;">¿No tienes cuenta? <span style="color:#4CAF50;font-weight:700;cursor:pointer;" onclick="registroNutri()">Regístrate aquí</span></p>
+  </div>`
 }
 
-function renderDashboardNutri(){
-  let misPacientes=pacientes.filter(p=>p.nutri==nutriActual.user)
-  if(!misPacientes.length) return
+function registroNutri() {
+  app.innerHTML = `
+  <div class="card" style="max-width:400px;margin:40px auto;">
+    <button onclick="loginNutri()" style="background:none;color:#888;font-size:13px;padding:0;margin-bottom:16px;">⬅ Volver al login</button>
+    <h2 style="text-align:center;margin-bottom:4px;">📝 Crear cuenta</h2>
+    <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:20px;">Regístrate como nutricionista</p>
+    <input id="nuevoUserNutri" placeholder="Usuario" style="width:100%;margin-bottom:10px;">
+    <input id="nuevoPassNutri" type="password" placeholder="Contraseña" style="width:100%;margin-bottom:16px;">
+    <button onclick="registrarNutri()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Crear cuenta</button>
+    <hr style="margin:20px 0;border-color:#eee;">
+    <p style="text-align:center;font-size:14px;color:#888;margin:0;">¿Ya tienes cuenta? <span style="color:#4CAF50;font-weight:700;cursor:pointer;" onclick="loginNutri()">Inicia sesión</span></p>
+  </div>`
+}
 
-  // --- Gráfica cumplimiento semanal ---
-  let dias=["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
-  let labels=dias.map(d=>d.charAt(0).toUpperCase()+d.slice(1,3))
-  let data=dias.map(dia=>{
-    let total=0,cumplieron=0
-    misPacientes.forEach(p=>{
-      let dieta=p.dietasemanal?.[dia]
-      if(dieta && Object.values(dieta).some(v=>v)){
-        total++
-        if(p.progreso>=100) cumplieron++
-      }
-    })
-    return total>0?Math.round((cumplieron/misPacientes.length)*100):0
+async function registrarNutri() {
+  let u = document.getElementById("nuevoUserNutri").value.trim()
+  let p = document.getElementById("nuevoPassNutri").value
+  if (!u || !p) { alert("Completa todos los campos"); return }
+  mostrarLoader("Verificando usuario...")
+  const existe = await window._db.getNutri(u)
+  if (existe) { ocultarLoader(); alert("Este usuario ya existe ❌"); return }
+  ocultarLoader()
+  window._tempNutri = { user: u, pass: p }
+  pantallaPlanYPago("nutricionista", "registro")
+}
+
+async function entrarNutri() {
+  let u = document.getElementById("userNutri").value.trim()
+  let p = document.getElementById("passNutri").value
+  mostrarLoader("Verificando...")
+  const nutri = await window._db.getNutri(u)
+  ocultarLoader()
+  if (!nutri || nutri.pass !== p) { alert("Credenciales incorrectas"); return }
+  nutriActual = nutri
+  dashboard()
+}
+
+// ===== DASHBOARD NUTRICIONISTA (con tiempo real) =====
+async function dashboard() {
+  limpiarListeners()
+  mostrarLoader("Cargando dashboard...")
+
+  // Primera carga
+  let misPacientes = await window._db.getPacientesDeNutri(nutriActual.user)
+  ocultarLoader()
+  renderDashboardCompleto(misPacientes)
+
+  // Escuchar cambios en tiempo real
+  _unsubscribeNutri = window._db.escucharPacientesNutri(nutriActual.user, (pacientes) => {
+    renderDashboardCompleto(pacientes)
+  })
+}
+
+function renderDashboardCompleto(misPacientes) {
+  let lista = ""
+  misPacientes.forEach(p => {
+    lista += `
+    <div class="card">
+      <b>${p.nombre}</b> <span style="font-size:12px;color:#888;background:#f0f0f0;padding:2px 8px;border-radius:10px;">${p.plan||'básico'}</span><br>
+      ${p.progreso}% progreso<br>
+      <button onclick="crearDietaSemanal('${p.usuario}')">Dieta semanal</button>
+      <button onclick="verNotificaciones('${p.usuario}')">Notificaciones</button>
+      <button onclick="verPaciente('${p.usuario}')">Ver</button>
+    </div>`
   })
 
-  let ctx=document.getElementById("grafica-nutri")
-  if(!ctx) return
-  if(window._chartNutri) window._chartNutri.destroy()
-  window._chartNutri=new Chart(ctx,{
-    type:"bar",
-    data:{
+  let dashboardPremium = ""
+  if (nutriActual.plan == "premium") {
+    dashboardPremium = `<div class="card" id="card-dashboard-nutri">
+      <h2>📊 Dashboard Premium <span style="font-size:12px;color:#4CAF50;font-weight:700;">🔴 En vivo</span></h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+        <div style="flex:1;min-width:120px;background:#e8f5e9;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#2e7d32">${misPacientes.length}</div>
+          <div style="font-size:12px;color:#666">Pacientes</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#e3f2fd;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#1565c0">${misPacientes.length ? Math.round(misPacientes.reduce((a,p)=>a+(p.progreso||0),0)/misPacientes.length) : 0}%</div>
+          <div style="font-size:12px;color:#666">Promedio progreso</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:#fff8e1;border-radius:10px;padding:14px;text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#f57f17">${misPacientes.length ? Math.max(...misPacientes.map(p=>p.racha||0)) : 0}🔥</div>
+          <div style="font-size:12px;color:#666">Mejor racha</div>
+        </div>
+      </div>
+      <canvas id="grafica-nutri" height="170"></canvas>
+      <h4 style="margin:16px 0 8px">🏅 Mejores rachas</h4>
+      <div id="mejores-rachas"></div>
+      <h4 style="margin:16px 0 8px">⚠️ Necesitan atención</h4>
+      <div id="peores-rachas"></div>
+    </div>`
+  }
+
+  app.innerHTML = `
+  ${dashboardPremium}
+  <div class="card"><h2>Dashboard Nutricionista 👨‍⚕️</h2></div>
+  <div class="card">
+    <h3>Crear paciente</h3>
+    <input id="nombre" placeholder="Nombre">
+    <input id="usuario" placeholder="Usuario">
+    <input id="password" placeholder="Password">
+    <input id="edad" placeholder="Edad">
+    <input id="peso" placeholder="Peso">
+    <input id="altura" placeholder="Altura">
+    <select id="objetivo">
+      <option>Bajar peso</option>
+      <option>Mantener</option>
+      <option>Subir peso</option>
+    </select>
+    <button onclick="crearPaciente()">Crear</button>
+  </div>
+  ${lista}`
+
+  if (nutriActual.plan == "premium") setTimeout(() => renderDashboardNutri(misPacientes), 50)
+}
+
+function renderDashboardNutri(misPacientes) {
+  let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
+  let labels = dias.map(d => d.charAt(0).toUpperCase() + d.slice(1, 3))
+  let data = dias.map(dia => {
+    let total = 0, cumplieron = 0
+    misPacientes.forEach(p => {
+      let dieta = p.dietasemanal?.[dia]
+      if (dieta && Object.values(dieta).some(v => v)) {
+        total++
+        if (p.progreso >= 100) cumplieron++
+      }
+    })
+    return total > 0 ? Math.round((cumplieron / misPacientes.length) * 100) : 0
+  })
+
+  let ctx = document.getElementById("grafica-nutri")
+  if (!ctx) return
+  if (window._chartNutri) window._chartNutri.destroy()
+  window._chartNutri = new Chart(ctx, {
+    type: "bar",
+    data: {
       labels,
-      datasets:[{
-        label:"% cumplimiento pacientes",
+      datasets: [{
+        label: "% cumplimiento pacientes",
         data,
-        backgroundColor:data.map(v=>v>=70?"rgba(76,175,80,0.75)":v>=40?"rgba(255,167,38,0.75)":"rgba(239,83,80,0.75)"),
-        borderRadius:8,
-        borderSkipped:false
+        backgroundColor: data.map(v => v>=70?"rgba(76,175,80,0.75)":v>=40?"rgba(255,167,38,0.75)":"rgba(239,83,80,0.75)"),
+        borderRadius: 8, borderSkipped: false
       }]
     },
-    options:{
-      responsive:true,
-      plugins:{legend:{labels:{font:{family:"Nunito"},color:"#555"}}},
-      scales:{
-        y:{beginAtZero:true,max:100,ticks:{color:"#888",font:{family:"Nunito"},callback:v=>v+"%"},grid:{color:"#f0f0f0"}},
-        x:{ticks:{color:"#888",font:{family:"Nunito"}},grid:{display:false}}
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { font: { family: "Nunito" }, color: "#555" } } },
+      scales: {
+        y: { beginAtZero:true, max:100, ticks:{color:"#888",font:{family:"Nunito"},callback:v=>v+"%"}, grid:{color:"#f0f0f0"} },
+        x: { ticks:{color:"#888",font:{family:"Nunito"}}, grid:{display:false} }
       }
     }
   })
 
-  // --- Mejores rachas ---
-  let sorted=[...misPacientes].sort((a,b)=>(b.racha||0)-(a.racha||0))
-  let mejores=sorted.slice(0,3)
-  let peores=sorted.slice(-3).reverse().filter(p=>(p.racha||0)<3)
+  let sorted = [...misPacientes].sort((a,b) => (b.racha||0)-(a.racha||0))
+  let mejores = sorted.slice(0, 3)
+  let peores = sorted.slice(-3).reverse().filter(p => (p.racha||0) < 3)
+  let medals = ["🥇","🥈","🥉"]
 
-  let mejoresDiv=document.getElementById("mejores-rachas")
-  let peoresDiv=document.getElementById("peores-rachas")
-  if(!mejoresDiv||!peoresDiv) return
+  let mejoresDiv = document.getElementById("mejores-rachas")
+  let peoresDiv = document.getElementById("peores-rachas")
+  if (!mejoresDiv || !peoresDiv) return
 
-  let medals=["🥇","🥈","🥉"]
-  mejoresDiv.innerHTML=mejores.map((p,i)=>`
+  mejoresDiv.innerHTML = mejores.map((p,i) => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:#f9f9f9;margin-bottom:6px;">
       <span>${medals[i]} <b>${p.nombre}</b></span>
       <span style="background:#FF7043;color:white;border-radius:12px;padding:2px 10px;font-size:13px;">${p.racha||0} 🔥 días</span>
     </div>`).join("") || "<p style='color:#aaa;font-size:13px'>Sin datos aún.</p>"
 
-  peoresDiv.innerHTML=peores.length?peores.map(p=>`
+  peoresDiv.innerHTML = peores.length ? peores.map(p => `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:#fff8f8;margin-bottom:6px;border-left:3px solid #EF5350;">
       <span>⚠️ <b>${p.nombre}</b></span>
       <span style="background:#EF5350;color:white;border-radius:12px;padding:2px 10px;font-size:13px;">${p.racha||0} días racha</span>
-    </div>`).join(""):"<p style='color:#aaa;font-size:13px'>¡Todos van bien! 🎉</p>"
+    </div>`).join("") : "<p style='color:#aaa;font-size:13px'>¡Todos van bien! 🎉</p>"
 }
 
-function crearPaciente(){
-let nombreVal=document.getElementById("nombre").value
-let usuarioVal=document.getElementById("usuario").value
-let passVal=document.getElementById("password").value
-let edadVal=document.getElementById("edad").value
-let pesoVal=document.getElementById("peso").value
-let alturaVal=document.getElementById("altura").value
-let objetivoVal=document.getElementById("objetivo").value
-let nuevoPaciente={
-nombre:nombreVal,usuario:usuarioVal,password:passVal,edad:edadVal,
-peso:pesoVal,altura:alturaVal,objetivo:objetivoVal,
-calorias:calcularCalorias(pesoVal,alturaVal,edadVal,objetivoVal),
-fecha:new Date().toDateString(),
-dietasemanal:{},
-comidas:{desayuno:false,refa1:false,almuerzo:false,refa2:false,cena:false},
-progreso:0,racha:0,nivel:1,notificaciones:[],nutri:nutriActual.user,plan:"básico"
-}
-localStorage.setItem("tempPaciente",JSON.stringify(nuevoPaciente))
-pantallaPlanYPago("paciente","nutri")
+// ===== CREAR PACIENTE =====
+async function crearPaciente() {
+  let nombreVal = document.getElementById("nombre").value
+  let usuarioVal = document.getElementById("usuario").value.trim()
+  let passVal = document.getElementById("password").value
+  let edadVal = document.getElementById("edad").value
+  let pesoVal = document.getElementById("peso").value
+  let alturaVal = document.getElementById("altura").value
+  let objetivoVal = document.getElementById("objetivo").value
+  if (!nombreVal || !usuarioVal || !passVal) { alert("Nombre, usuario y contraseña son requeridos"); return }
+
+  mostrarLoader("Verificando usuario...")
+  const existe = await window._db.getPaciente(usuarioVal)
+  if (existe) { ocultarLoader(); alert("Este usuario ya existe ❌"); return }
+  ocultarLoader()
+
+  let nuevoPaciente = {
+    nombre: nombreVal, usuario: usuarioVal, password: passVal, edad: edadVal,
+    peso: pesoVal, altura: alturaVal, objetivo: objetivoVal,
+    calorias: calcularCalorias(pesoVal, alturaVal, edadVal, objetivoVal),
+    fecha: new Date().toDateString(),
+    dietasemanal: {},
+    comidas: {desayuno:false,refa1:false,almuerzo:false,refa2:false,cena:false},
+    progreso: 0, racha: 0, nivel: 1, notificaciones: [], nutri: nutriActual.user, plan: "básico"
+  }
+  window._tempPaciente = nuevoPaciente
+  pantallaPlanYPago("paciente", "nutri")
 }
 
-function crearDietaSemanal(usuario){
-let paciente=pacientes.find(p=>p.usuario==usuario)
-let dias=["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
-let diaActualIdx=0
+// ===== DIETA SEMANAL =====
+async function crearDietaSemanal(usuario) {
+  mostrarLoader("Cargando datos...")
+  let paciente = await window._db.getPaciente(usuario)
+  ocultarLoader()
+  let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
+  window._dietaUsuario = usuario
+  window._diaIdx = 0
+  window._pacienteDieta = paciente
+  renderFormDieta(paciente, dias, 0)
+}
 
-function renderFormDieta(){
-  let d=dias[diaActualIdx]
-  let existente=paciente.dietasemanal[d]||{}
-  app.innerHTML=`
+function renderFormDieta(paciente, dias, diaActualIdx) {
+  let d = dias[diaActualIdx]
+  let existente = paciente.dietasemanal?.[d] || {}
+  app.innerHTML = `
   <div class="card">
     <button onclick="dashboard()">⬅ Cancelar</button>
     <h2>🥗 Dieta semanal — <b>${paciente.nombre}</b></h2>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
-      ${dias.map((dia,i)=>`<span onclick="cambiarDia(${i})" style="padding:6px 12px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;background:${i===diaActualIdx?'#4CAF50':'#eee'};color:${i===diaActualIdx?'white':'#555'}">${dia.charAt(0).toUpperCase()+dia.slice(1)}</span>`).join('')}
+      ${dias.map((dia,i) => `<span onclick="cambiarDia(${i})" style="padding:6px 12px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;background:${i===diaActualIdx?'#4CAF50':'#eee'};color:${i===diaActualIdx?'white':'#555'}">${dia.charAt(0).toUpperCase()+dia.slice(1)}</span>`).join('')}
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <div><label style="font-size:13px;font-weight:700;color:#555">🍳 Desayuno</label><input id="f-desayuno" placeholder="Ej: Avena con frutas" value="${existente.desayuno||''}"></div>
@@ -463,7 +576,7 @@ function renderFormDieta(){
       <div><label style="font-size:13px;font-weight:700;color:#555">🌙 Cena</label><input id="f-cena" placeholder="Ej: Sopa de verduras" value="${existente.cena||''}"></div>
     </div>
     <div style="display:flex;justify-content:space-between;margin-top:16px;">
-      <button onclick="guardarDiaDieta('${usuario}')" style="background:#4CAF50;flex:1;margin-right:6px;">
+      <button onclick="guardarDiaDieta('${paciente.usuario}')" style="background:#4CAF50;flex:1;margin-right:6px;">
         ${diaActualIdx<6?'Guardar y siguiente ➡':'✅ Guardar y terminar'}
       </button>
     </div>
@@ -471,412 +584,479 @@ function renderFormDieta(){
   </div>`
 }
 
-window._dietaUsuario=usuario
-window._diaIdx=0
-diaActualIdx=0
-renderFormDieta()
-window._renderFormDieta=renderFormDieta
+async function cambiarDia(idx) {
+  let paciente = window._pacienteDieta
+  let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
+  let d = dias[window._diaIdx || 0]
+  if (!paciente.dietasemanal) paciente.dietasemanal = {}
+  paciente.dietasemanal[d] = {
+    desayuno: document.getElementById("f-desayuno")?.value || "",
+    refa1: document.getElementById("f-refa1")?.value || "",
+    almuerzo: document.getElementById("f-almuerzo")?.value || "",
+    refa2: document.getElementById("f-refa2")?.value || "",
+    cena: document.getElementById("f-cena")?.value || ""
+  }
+  window._diaIdx = idx
+  renderFormDieta(paciente, dias, idx)
 }
 
-function cambiarDia(idx){
-  let usuario=window._dietaUsuario
-  let paciente=pacientes.find(p=>p.usuario==usuario)
-  // Guardar día actual antes de cambiar
-  let dias=["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
-  let d=dias[window._diaIdx||0]
-  paciente.dietasemanal[d]={
-    desayuno:document.getElementById("f-desayuno")?.value||"",
-    refa1:document.getElementById("f-refa1")?.value||"",
-    almuerzo:document.getElementById("f-almuerzo")?.value||"",
-    refa2:document.getElementById("f-refa2")?.value||"",
-    cena:document.getElementById("f-cena")?.value||""
+async function guardarDiaDieta(usuario) {
+  let paciente = window._pacienteDieta
+  let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
+  let idx = window._diaIdx || 0
+  let d = dias[idx]
+  if (!paciente.dietasemanal) paciente.dietasemanal = {}
+  paciente.dietasemanal[d] = {
+    desayuno: document.getElementById("f-desayuno").value,
+    refa1: document.getElementById("f-refa1").value,
+    almuerzo: document.getElementById("f-almuerzo").value,
+    refa2: document.getElementById("f-refa2").value,
+    cena: document.getElementById("f-cena").value
   }
-  guardar()
-  window._diaIdx=idx
-  // Reconstruir desde crearDietaSemanal con nuevo índice
-  let pacienteCopy=paciente
-  let dias2=["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
-  let existente=pacienteCopy.dietasemanal[dias2[idx]]||{}
-  let diaActualIdx=idx
-  app.innerHTML=`
-  <div class="card">
-    <button onclick="dashboard()">⬅ Cancelar</button>
-    <h2>🥗 Dieta semanal — <b>${pacienteCopy.nombre}</b></h2>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
-      ${dias2.map((dia,i)=>`<span onclick="cambiarDia(${i})" style="padding:6px 12px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;background:${i===diaActualIdx?'#4CAF50':'#eee'};color:${i===diaActualIdx?'white':'#555'}">${dia.charAt(0).toUpperCase()+dia.slice(1)}</span>`).join('')}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div><label style="font-size:13px;font-weight:700;color:#555">🍳 Desayuno</label><input id="f-desayuno" placeholder="Ej: Avena con frutas" value="${existente.desayuno||''}"></div>
-      <div><label style="font-size:13px;font-weight:700;color:#555">🍎 Refa 1</label><input id="f-refa1" placeholder="Ej: Manzana" value="${existente.refa1||''}"></div>
-      <div><label style="font-size:13px;font-weight:700;color:#555">🍛 Almuerzo</label><input id="f-almuerzo" placeholder="Ej: Arroz con pollo" value="${existente.almuerzo||''}"></div>
-      <div><label style="font-size:13px;font-weight:700;color:#555">🥪 Refa 2</label><input id="f-refa2" placeholder="Ej: Yogur" value="${existente.refa2||''}"></div>
-      <div><label style="font-size:13px;font-weight:700;color:#555">🌙 Cena</label><input id="f-cena" placeholder="Ej: Sopa de verduras" value="${existente.cena||''}"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:16px;">
-      <button onclick="guardarDiaDieta('${usuario}')" style="background:#4CAF50;flex:1;margin-right:6px;">
-        ${diaActualIdx<6?'Guardar y siguiente ➡':'✅ Guardar y terminar'}
-      </button>
-    </div>
-    <p style="text-align:center;font-size:12px;color:#aaa;margin-top:8px;">Día ${diaActualIdx+1} de 7</p>
-  </div>`
-}
+  mostrarLoader("Guardando en Firebase...")
+  await window._db.guardarPaciente(paciente)
+  ocultarLoader()
 
-function guardarDiaDieta(usuario){
-  let paciente=pacientes.find(p=>p.usuario==usuario)
-  let dias=["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
-  let idx=window._diaIdx||0
-  let d=dias[idx]
-  paciente.dietasemanal[d]={
-    desayuno:document.getElementById("f-desayuno").value,
-    refa1:document.getElementById("f-refa1").value,
-    almuerzo:document.getElementById("f-almuerzo").value,
-    refa2:document.getElementById("f-refa2").value,
-    cena:document.getElementById("f-cena").value
-  }
-  guardar()
-  if(idx<6){
-    window._diaIdx=idx+1
-    cambiarDia(idx+1)
+  if (idx < 6) {
+    window._diaIdx = idx + 1
+    renderFormDieta(paciente, dias, idx + 1)
   } else {
-    alert("✅ Dieta semanal guardada correctamente")
+    alert("✅ Dieta semanal guardada en la nube")
     dashboard()
   }
 }
 
-function loginPaciente(){
-app.innerHTML=`
-<div class="card">
-<button onclick="inicio()">⬅</button>
-<h2>Login Paciente</h2>
-<input id="userPaciente" placeholder="Usuario">
-<input id="passPaciente" type="password" placeholder="Contraseña">
-<button onclick="entrarPaciente()">Entrar</button>
-<p style="cursor:pointer;color:#4CAF50;" onclick="olvidePass('paciente')">¿Olvidaste tu contraseña?</p>
-</div>`
+// ===== LOGIN PACIENTE =====
+function loginPaciente() {
+  limpiarListeners()
+  app.innerHTML = `
+  <div class="card">
+    <button onclick="inicio()">⬅</button>
+    <h2>Login Paciente</h2>
+    <input id="userPaciente" placeholder="Usuario">
+    <input id="passPaciente" type="password" placeholder="Contraseña">
+    <button onclick="entrarPaciente()">Entrar</button>
+    <p style="cursor:pointer;color:#4CAF50;" onclick="olvidePass('paciente')">¿Olvidaste tu contraseña?</p>
+  </div>`
 }
 
-function olvidePass(tipo){
-app.innerHTML=`
-<div class="card">
-<button onclick="inicio()">⬅ Volver</button>
-<h2>Recuperar contraseña</h2>
-<input id="userRecuperar" placeholder="Usuario">
-<input id="nuevaPass" type="password" placeholder="Nueva contraseña">
-<button onclick="cambiarPassword('${tipo}')">Cambiar contraseña</button>
-</div>`
+function olvidePass(tipo) {
+  app.innerHTML = `
+  <div class="card">
+    <button onclick="inicio()">⬅ Volver</button>
+    <h2>Recuperar contraseña</h2>
+    <input id="userRecuperar" placeholder="Usuario">
+    <input id="nuevaPass" type="password" placeholder="Nueva contraseña">
+    <button onclick="cambiarPassword('${tipo}')">Cambiar contraseña</button>
+  </div>`
 }
 
-function entrarPaciente(){
-let u=document.getElementById("userPaciente").value
-let p=document.getElementById("passPaciente").value
-pacienteActual=pacientes.find(x=>x.usuario==u&&x.password==p)
-if(!pacienteActual){alert("Credenciales incorrectas");return}
-panelPaciente()
+async function cambiarPassword(tipo) {
+  let user = document.getElementById("userRecuperar").value.trim()
+  let nueva = document.getElementById("nuevaPass").value
+  if (!user || !nueva) { alert("Completa todos los campos"); return }
+  mostrarLoader("Actualizando...")
+  if (tipo == "paciente") {
+    let p = await window._db.getPaciente(user)
+    if (!p) { ocultarLoader(); alert("Usuario no encontrado ❌"); return }
+    p.password = nueva
+    await window._db.guardarPaciente(p)
+  } else {
+    let n = await window._db.getNutri(user)
+    if (!n) { ocultarLoader(); alert("Usuario no encontrado ❌"); return }
+    n.pass = nueva
+    await window._db.guardarNutri(n)
+  }
+  ocultarLoader()
+  alert("Contraseña actualizada ✅")
+  if (tipo == "paciente") loginPaciente()
+  else loginNutri()
 }
 
-function avatar(){
-let p=pacienteActual.progreso
-if(p>=100) return "🏆"
-if(p>=80) return "🏋🏻‍♂️"
-if(p>=60) return "🦵🏻"
-if(p>=40) return "💪"
-return "🙂"
+async function entrarPaciente() {
+  let u = document.getElementById("userPaciente").value.trim()
+  let p = document.getElementById("passPaciente").value
+  mostrarLoader("Verificando...")
+  const pac = await window._db.getPaciente(u)
+  ocultarLoader()
+  if (!pac || pac.password !== p) { alert("Credenciales incorrectas"); return }
+  pacienteActual = pac
+  panelPaciente()
 }
 
-function marcarComida(tipo){
-if(!pacienteActual.comidas[tipo]){
-pacienteActual.comidas[tipo]=true
-pacienteActual.progreso+=20
-if(pacienteActual.progreso>100) pacienteActual.progreso=100
-
-// Guardar en historial
-if(!pacienteActual.historialComidas) pacienteActual.historialComidas=[]
-let hoy=new Date().toDateString()
-let entradaHoy=pacienteActual.historialComidas.find(h=>h.fecha==hoy)
-if(!entradaHoy){
-  entradaHoy={fecha:hoy,comidas:[],calorias:0}
-  pacienteActual.historialComidas.push(entradaHoy)
-}
-let calPorComida={desayuno:Math.round(pacienteActual.calorias*0.25),refa1:Math.round(pacienteActual.calorias*0.1),almuerzo:Math.round(pacienteActual.calorias*0.35),refa2:Math.round(pacienteActual.calorias*0.1),cena:Math.round(pacienteActual.calorias*0.2)}
-entradaHoy.comidas.push(tipo)
-entradaHoy.calorias+=calPorComida[tipo]||0
-
-if(pacienteActual.progreso==100){
-pacienteActual.racha+=1
-alert("🎉 ¡Felicidades! Completaste tu día. Racha actual: "+pacienteActual.racha)
-}
-guardar()
-panelPaciente()
-}else{alert("Ya marcaste esta comida ✅")}
+// ===== AVATAR =====
+function avatar() {
+  let p = pacienteActual.progreso
+  if (p >= 100) return "🏆"
+  if (p >= 80) return "🏋🏻‍♂️"
+  if (p >= 60) return "🦵🏻"
+  if (p >= 40) return "💪"
+  return "🙂"
 }
 
-function panelPaciente(){
-reiniciarDia()
-let hoy=diaActual()
-let dietaHoy=pacienteActual.dietasemanal[hoy]||{}
-app.innerHTML=`
-<div class="card">
-<h2>${pacienteActual.nombre} <span style="font-size:13px;background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:12px;">${pacienteActual.plan||'básico'}</span></h2>
-<div class="avatar">${avatar()}</div>
-<div class="progress">
-<div class="bar" style="width:${pacienteActual.progreso}%">${pacienteActual.progreso}%</div></div>
-<p>Calorías: ${pacienteActual.calorias}</p>
-<p>Racha:</p>
-<p style="font-size:22px">${barraRacha()}</p>
-</div>
-<div class="card">
-<h3>Marcar comidas</h3>
-<button onclick="marcarComida('desayuno')">🍳 Desayuno</button>
-<button onclick="marcarComida('refa1')">🍎 Refa 1</button>
-<button onclick="marcarComida('almuerzo')">🍛 Almuerzo</button>
-<button onclick="marcarComida('refa2')">🥪 Refa 2</button>
-<button onclick="marcarComida('cena')">🌙 Cena</button>
-</div>
-<div class="card">
-<h3>Dieta de hoy (${hoy})</h3>
-<p>Desayuno: ${dietaHoy.desayuno||""}</p>
-<p>Refa: ${dietaHoy.refa1||""}</p>
-<p>Almuerzo: ${dietaHoy.almuerzo||""}</p>
-<p>Refa: ${dietaHoy.refa2||""}</p>
-<p>Cena: ${dietaHoy.cena||""}</p>
-</div>
-<div class="card">
-<h3>🤖 Funciones AI</h3>
-${['estandar','premium'].includes(pacienteActual.plan)?`
-<button onclick="analisisProgreso()" style="background:#7C4DFF;width:100%;margin-bottom:6px;">📊 Analizar mi progreso con AI</button>
-<button onclick="chatNutriAI()" style="background:#0288D1;width:100%;">💬 Chat con Nutricionista AI</button>
-`:`<div class="ai-locked">🔒 Funciones AI disponibles en planes <b>Estándar</b> y <b>Premium</b>.<br><span style="font-size:12px;cursor:pointer;color:#4CAF50;" onclick="verPrecios()">Ver planes →</span></div>`}
-</div>
-<div class="card">
-<h3>📊 Dashboard de comidas</h3>
-${pacienteActual.plan=="premium"?`
-<canvas id="grafica-calorias" height="160"></canvas>
-<h4 style="margin:14px 0 8px">📋 Historial reciente</h4>
-<div id="historial-comidas"></div>
-`:`<div class="ai-locked">🔒 Dashboard disponible solo en el plan <b>Premium</b>.<br><span style="font-size:12px;cursor:pointer;color:#4CAF50;" onclick="verPrecios()">Ver planes →</span></div>`}
-</div>
-<div class="card">
-<h3>🛵 Pedir comida</h3>
-<div style="margin-bottom:10px;">
-  <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">¿Qué comida?</label>
-  <div style="display:flex;flex-wrap:wrap;gap:6px;" id="selector-tipo-comida">
-    <span onclick="selTipo('desayuno',this)" class="chip-comida chip-activo">🍳 Desayuno</span>
-    <span onclick="selTipo('refa1',this)" class="chip-comida">🍎 Refa 1</span>
-    <span onclick="selTipo('almuerzo',this)" class="chip-comida">🍛 Almuerzo</span>
-    <span onclick="selTipo('refa2',this)" class="chip-comida">🥪 Refa 2</span>
-    <span onclick="selTipo('cena',this)" class="chip-comida">🌙 Cena</span>
-  </div>
-  <input type="hidden" id="tipoComida" value="desayuno">
-</div>
-<div id="sugerencia-dieta" style="background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;margin-bottom:10px;"></div>
-<div style="margin-bottom:10px;">
-  <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">📍 Dirección de entrega</label>
-  <input id="direccion" placeholder="Ej: 5a Avenida, Zona 1" style="width:100%;margin:0;">
-</div>
-<div style="margin-bottom:14px;">
-  <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">💳 Método de pago</label>
-  <div style="display:flex;gap:8px;">
-    <span onclick="selPago('efectivo',this)" class="chip-pago chip-pago-activo">💵 Efectivo</span>
-    <span onclick="selPago('tarjeta',this)" class="chip-pago">💳 Tarjeta</span>
-  </div>
-  <input type="hidden" id="metodoPago" value="efectivo">
-</div>
-<div id="campo-billete" style="margin-bottom:10px;">
-  <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">¿Con cuánto pagarás? (Q)</label>
-  <input id="billete" type="number" placeholder="Ej: 100" style="width:100%;margin:0;">
-</div>
-<button onclick="pedido()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Confirmar pedido 🛵</button>
-</div>`
-setTimeout(renderDashboard, 50)
-setTimeout(()=>{ let el=document.querySelector('.chip-comida.chip-activo'); if(el) selTipo('desayuno',el) }, 60)
-}
+// ===== MARCAR COMIDA (guarda en Firebase) =====
+async function marcarComida(tipo) {
+  if (pacienteActual.comidas[tipo]) { alert("Ya marcaste esta comida ✅"); return }
+  pacienteActual.comidas[tipo] = true
+  pacienteActual.progreso += 20
+  if (pacienteActual.progreso > 100) pacienteActual.progreso = 100
 
-function renderDashboard(){
-  if(!pacienteActual || pacienteActual.plan!="premium") return
-  let historial = (pacienteActual.historialComidas||[]).slice(-7)
-  let diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"]
+  if (!pacienteActual.historialComidas) pacienteActual.historialComidas = []
+  let hoy = new Date().toDateString()
+  let entradaHoy = pacienteActual.historialComidas.find(h => h.fecha == hoy)
+  if (!entradaHoy) {
+    entradaHoy = { fecha: hoy, comidas: [], calorias: 0 }
+    pacienteActual.historialComidas.push(entradaHoy)
+  }
+  let calPorComida = {
+    desayuno: Math.round(pacienteActual.calorias*0.25),
+    refa1: Math.round(pacienteActual.calorias*0.1),
+    almuerzo: Math.round(pacienteActual.calorias*0.35),
+    refa2: Math.round(pacienteActual.calorias*0.1),
+    cena: Math.round(pacienteActual.calorias*0.2)
+  }
+  entradaHoy.comidas.push(tipo)
+  entradaHoy.calorias += calPorComida[tipo] || 0
 
-  // --- Gráfica ---
-  let labels = historial.map(h=>{
-    let d = new Date(h.fecha)
-    return diasSemana[d.getDay()]
-  })
-  let dataKcal = historial.map(h=>h.calorias||0)
-  let meta = pacienteActual.calorias||2000
-
-  let ctx = document.getElementById("grafica-calorias")
-  if(!ctx) return
-
-  // Destruir instancia previa si existe
-  if(window._chartInstance) window._chartInstance.destroy()
-
-  window._chartInstance = new Chart(ctx, {
-    type:"bar",
-    data:{
-      labels: labels.length ? labels : ["Sin datos"],
-      datasets:[
-        {
-          label:"Calorías consumidas",
-          data: dataKcal.length ? dataKcal : [0],
-          backgroundColor:"rgba(76,175,80,0.7)",
-          borderRadius:8,
-          borderSkipped:false
-        },
-        {
-          label:"Meta diaria",
-          data: labels.map(()=>meta),
-          type:"line",
-          borderColor:"#FF7043",
-          borderDash:[6,4],
-          pointRadius:0,
-          borderWidth:2,
-          fill:false
-        }
-      ]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{labels:{font:{family:"Nunito"},color:"#555"}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": "+ctx.parsed.y+" kcal"}}
-      },
-      scales:{
-        y:{beginAtZero:true,ticks:{color:"#888",font:{family:"Nunito"}},grid:{color:"#f0f0f0"}},
-        x:{ticks:{color:"#888",font:{family:"Nunito"}},grid:{display:false}}
-      }
-    }
-  })
-
-  // --- Historial ---
-  let nombres = {desayuno:"🍳 Desayuno",refa1:"🍎 Refa 1",almuerzo:"🍛 Almuerzo",refa2:"🥪 Refa 2",cena:"🌙 Cena"}
-  let histDiv = document.getElementById("historial-comidas")
-  if(!histDiv) return
-
-  if(historial.length===0){
-    histDiv.innerHTML="<p style='color:#aaa;font-size:13px'>Aún no hay historial. ¡Marca tus comidas!</p>"
-    return
+  if (pacienteActual.progreso == 100) {
+    pacienteActual.racha += 1
+    alert("🎉 ¡Felicidades! Completaste tu día. Racha actual: " + pacienteActual.racha)
   }
 
+  // Guardar en Firebase (el listener actualizará la UI automáticamente)
+  await window._db.guardarPaciente(pacienteActual)
+  panelPaciente()
+}
+
+// ===== PANEL PACIENTE (con tiempo real) =====
+function panelPaciente() {
+  limpiarListeners()
+  reiniciarDia()
+  _renderPanelPaciente(pacienteActual)
+
+  // Escuchar cambios en tiempo real
+  _unsubscribePaciente = window._db.escucharPaciente(pacienteActual.usuario, (datos) => {
+    // Solo actualizar si los datos cambiaron externamente (no desde esta sesión)
+    let hoy = diaActual()
+    let dietaHoy = datos.dietasemanal?.[hoy] || {}
+    let divDieta = document.getElementById("dieta-hoy")
+    if (divDieta) {
+      divDieta.innerHTML = `
+        <p>Desayuno: ${dietaHoy.desayuno||""}</p>
+        <p>Refa: ${dietaHoy.refa1||""}</p>
+        <p>Almuerzo: ${dietaHoy.almuerzo||""}</p>
+        <p>Refa: ${dietaHoy.refa2||""}</p>
+        <p>Cena: ${dietaHoy.cena||""}</p>`
+    }
+    let divBadge = document.getElementById("sync-timestamp")
+    if (divBadge) divBadge.textContent = "Actualizado: " + new Date().toLocaleTimeString()
+    pacienteActual = datos
+  })
+}
+
+function reiniciarDia() {
+  if (!pacienteActual) return
+  let hoy = new Date().toDateString()
+  if (pacienteActual.fecha != hoy) {
+    pacienteActual.fecha = hoy
+    pacienteActual.comidas = {desayuno:false,refa1:false,almuerzo:false,refa2:false,cena:false}
+    pacienteActual.progreso = 0
+    window._db.guardarPaciente(pacienteActual)
+  }
+  setTimeout(reiniciarDia, 60000)
+}
+
+function _renderPanelPaciente(p) {
+  let hoy = diaActual()
+  let dietaHoy = p.dietasemanal?.[hoy] || {}
+  app.innerHTML = `
+  <div class="card">
+    <h2>${p.nombre} <span style="font-size:13px;background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:12px;">${p.plan||'básico'}</span></h2>
+    <div style="font-size:11px;color:#4CAF50;font-weight:700;margin-bottom:6px;" id="sync-timestamp">🔴 En vivo</div>
+    <div class="avatar">${avatar()}</div>
+    <div class="progress">
+      <div class="bar" style="width:${p.progreso}%">${p.progreso}%</div>
+    </div>
+    <p>Calorías: ${p.calorias}</p>
+    <p>Racha:</p>
+    <p style="font-size:22px">${barraRacha()}</p>
+  </div>
+  <div class="card">
+    <h3>Marcar comidas</h3>
+    <button onclick="marcarComida('desayuno')">🍳 Desayuno</button>
+    <button onclick="marcarComida('refa1')">🍎 Refa 1</button>
+    <button onclick="marcarComida('almuerzo')">🍛 Almuerzo</button>
+    <button onclick="marcarComida('refa2')">🥪 Refa 2</button>
+    <button onclick="marcarComida('cena')">🌙 Cena</button>
+  </div>
+  <div class="card">
+    <h3>Dieta de hoy (${hoy}) <span style="font-size:11px;color:#4CAF50;">↺ tiempo real</span></h3>
+    <div id="dieta-hoy">
+      <p>Desayuno: ${dietaHoy.desayuno||""}</p>
+      <p>Refa: ${dietaHoy.refa1||""}</p>
+      <p>Almuerzo: ${dietaHoy.almuerzo||""}</p>
+      <p>Refa: ${dietaHoy.refa2||""}</p>
+      <p>Cena: ${dietaHoy.cena||""}</p>
+    </div>
+  </div>
+  <div class="card">
+    <h3>🤖 Funciones AI</h3>
+    ${['estandar','premium'].includes(p.plan) ? `
+    <button onclick="analisisProgreso()" style="background:#7C4DFF;width:100%;margin-bottom:6px;">📊 Analizar mi progreso con AI</button>
+    <button onclick="chatNutriAI()" style="background:#0288D1;width:100%;">💬 Chat con Nutricionista AI</button>
+    ` : `<div class="ai-locked">🔒 Funciones AI disponibles en planes <b>Estándar</b> y <b>Premium</b>.<br><span style="font-size:12px;cursor:pointer;color:#4CAF50;" onclick="verPrecios()">Ver planes →</span></div>`}
+  </div>
+  <div class="card">
+    <h3>📊 Dashboard de comidas</h3>
+    ${p.plan=="premium" ? `
+    <canvas id="grafica-calorias" height="160"></canvas>
+    <h4 style="margin:14px 0 8px">📋 Historial reciente</h4>
+    <div id="historial-comidas"></div>
+    ` : `<div class="ai-locked">🔒 Dashboard disponible solo en el plan <b>Premium</b>.<br><span style="font-size:12px;cursor:pointer;color:#4CAF50;" onclick="verPrecios()">Ver planes →</span></div>`}
+  </div>
+  <div class="card">
+    <h3>🛵 Pedir comida</h3>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">¿Qué comida?</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;" id="selector-tipo-comida">
+        <span onclick="selTipo('desayuno',this)" class="chip-comida chip-activo">🍳 Desayuno</span>
+        <span onclick="selTipo('refa1',this)" class="chip-comida">🍎 Refa 1</span>
+        <span onclick="selTipo('almuerzo',this)" class="chip-comida">🍛 Almuerzo</span>
+        <span onclick="selTipo('refa2',this)" class="chip-comida">🥪 Refa 2</span>
+        <span onclick="selTipo('cena',this)" class="chip-comida">🌙 Cena</span>
+      </div>
+      <input type="hidden" id="tipoComida" value="desayuno">
+    </div>
+    <div id="sugerencia-dieta" style="background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;margin-bottom:10px;"></div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">📍 Dirección de entrega</label>
+      <input id="direccion" placeholder="Ej: 5a Avenida, Zona 1" style="width:100%;margin:0;">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">💳 Método de pago</label>
+      <div style="display:flex;gap:8px;">
+        <span onclick="selPago('efectivo',this)" class="chip-pago chip-pago-activo">💵 Efectivo</span>
+        <span onclick="selPago('tarjeta',this)" class="chip-pago">💳 Tarjeta</span>
+      </div>
+      <input type="hidden" id="metodoPago" value="efectivo">
+    </div>
+    <div id="campo-billete" style="margin-bottom:10px;">
+      <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">¿Con cuánto pagarás? (Q)</label>
+      <input id="billete" type="number" placeholder="Ej: 100" style="width:100%;margin:0;">
+    </div>
+    <button onclick="pedido()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Confirmar pedido 🛵</button>
+  </div>`
+  setTimeout(renderDashboard, 50)
+  setTimeout(() => { let el = document.querySelector('.chip-comida.chip-activo'); if(el) selTipo('desayuno', el) }, 60)
+}
+
+function renderDashboard() {
+  if (!pacienteActual || pacienteActual.plan != "premium") return
+  let historial = (pacienteActual.historialComidas||[]).slice(-7)
+  let diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"]
+  let labels = historial.map(h => { let d = new Date(h.fecha); return diasSemana[d.getDay()] })
+  let dataKcal = historial.map(h => h.calorias || 0)
+  let meta = pacienteActual.calorias || 2000
+  let ctx = document.getElementById("grafica-calorias")
+  if (!ctx) return
+  if (window._chartInstance) window._chartInstance.destroy()
+  window._chartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels.length ? labels : ["Sin datos"],
+      datasets: [
+        { label:"Calorías consumidas", data: dataKcal.length ? dataKcal : [0], backgroundColor:"rgba(76,175,80,0.7)", borderRadius:8, borderSkipped:false },
+        { label:"Meta diaria", data: labels.map(()=>meta), type:"line", borderColor:"#FF7043", borderDash:[6,4], pointRadius:0, borderWidth:2, fill:false }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend:{labels:{font:{family:"Nunito"},color:"#555"}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": "+ctx.parsed.y+" kcal"}} },
+      scales: { y:{beginAtZero:true,ticks:{color:"#888",font:{family:"Nunito"}},grid:{color:"#f0f0f0"}}, x:{ticks:{color:"#888",font:{family:"Nunito"}},grid:{display:false}} }
+    }
+  })
+  let nombres = {desayuno:"🍳 Desayuno",refa1:"🍎 Refa 1",almuerzo:"🍛 Almuerzo",refa2:"🥪 Refa 2",cena:"🌙 Cena"}
+  let histDiv = document.getElementById("historial-comidas")
+  if (!histDiv) return
+  if (historial.length === 0) { histDiv.innerHTML = "<p style='color:#aaa;font-size:13px'>Aún no hay historial.</p>"; return }
   let html = ""
-  ;[...historial].reverse().forEach(h=>{
+  ;[...historial].reverse().forEach(h => {
     let d = new Date(h.fecha)
     let label = h.fecha===new Date().toDateString()?"Hoy":diasSemana[d.getDay()]+" "+d.getDate()
     let chips = (h.comidas||[]).map(c=>`<span style="background:#e8f5e9;color:#2e7d32;border-radius:20px;padding:2px 9px;font-size:12px;margin:2px 2px 0 0;display:inline-block;">${nombres[c]||c}</span>`).join("")
     let pct = Math.round((h.calorias/meta)*100)
     let barColor = pct>=90?"#4CAF50":pct>=60?"#FFA726":"#EF5350"
     html+=`<div style="border-left:3px solid ${barColor};padding:8px 12px;margin-bottom:8px;background:#fafafa;border-radius:0 8px 8px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <b style="font-size:14px">${label}</b>
-        <span style="font-size:12px;color:#888">${h.calorias} kcal <span style="color:${barColor};font-weight:700">(${pct}%)</span></span>
-      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;"><b style="font-size:14px">${label}</b><span style="font-size:12px;color:#888">${h.calorias} kcal <span style="color:${barColor};font-weight:700">(${pct}%)</span></span></div>
       <div style="margin-top:5px">${chips||"<span style='color:#ccc;font-size:12px'>Sin comidas</span>"}</div>
     </div>`
   })
   histDiv.innerHTML = html
 }
 
-function selTipo(val, el){
-  document.getElementById("tipoComida").value=val
-  document.querySelectorAll(".chip-comida").forEach(c=>c.classList.remove("chip-activo"))
+function selTipo(val, el) {
+  document.getElementById("tipoComida").value = val
+  document.querySelectorAll(".chip-comida").forEach(c => c.classList.remove("chip-activo"))
   el.classList.add("chip-activo")
-  // Mostrar sugerencia de dieta
-  let hoy=diaActual()
-  let dieta=pacienteActual.dietasemanal[hoy]||{}
-  let comida=dieta[val]||null
-  let div=document.getElementById("sugerencia-dieta")
-  if(div) div.innerHTML=comida
-    ?`💡 Tu dieta sugiere: <b>${comida}</b>`
-    :`<span style="color:#f57f17">⚠️ No tienes dieta asignada para esta comida.</span>`
+  let hoy = diaActual()
+  let dieta = pacienteActual.dietasemanal?.[hoy] || {}
+  let comida = dieta[val] || null
+  let div = document.getElementById("sugerencia-dieta")
+  if (div) div.innerHTML = comida
+    ? `💡 Tu dieta sugiere: <b>${comida}</b>`
+    : `<span style="color:#f57f17">⚠️ No tienes dieta asignada para esta comida.</span>`
 }
 
-function selPago(val, el){
-  document.getElementById("metodoPago").value=val
-  document.querySelectorAll(".chip-pago").forEach(c=>c.classList.remove("chip-pago-activo"))
+function selPago(val, el) {
+  document.getElementById("metodoPago").value = val
+  document.querySelectorAll(".chip-pago").forEach(c => c.classList.remove("chip-pago-activo"))
   el.classList.add("chip-pago-activo")
-  let campo=document.getElementById("campo-billete")
-  if(campo) campo.style.display=val=="efectivo"?"block":"none"
+  let campo = document.getElementById("campo-billete")
+  if (campo) campo.style.display = val == "efectivo" ? "block" : "none"
 }
 
-function pedido(){
-  let tipo=document.getElementById("tipoComida").value
-  let direccion=document.getElementById("direccion").value.trim()
-  let pago=document.getElementById("metodoPago").value
-  let hoy=diaActual()
-  let comida=pacienteActual.dietasemanal[hoy]?.[tipo]||null
+async function pedido() {
+  let tipo = document.getElementById("tipoComida").value
+  let direccion = document.getElementById("direccion").value.trim()
+  let pago = document.getElementById("metodoPago").value
+  let hoy = diaActual()
+  let comida = pacienteActual.dietasemanal?.[hoy]?.[tipo] || null
 
-  if(!direccion){ alert("Por favor ingresa tu dirección de entrega 📍"); return }
+  if (!direccion) { alert("Por favor ingresa tu dirección de entrega 📍"); return }
 
-  if(!comida){
-    pacienteActual.notificaciones.push({dia:hoy,tipo})
-    guardar()
+  if (!comida) {
+    if (!pacienteActual.notificaciones) pacienteActual.notificaciones = []
+    pacienteActual.notificaciones.push({ dia: hoy, tipo })
+    await window._db.guardarPaciente(pacienteActual)
     mostrarConfirmacion("⚠️ No tienes dieta asignada para esta comida. Se notificó a tu nutricionista.")
     return
   }
 
-  let cambio=""
-  if(pago=="efectivo"){
-    let billete=parseFloat(document.getElementById("billete").value)
-    if(!billete||billete<=0){ alert("Ingresa el monto con el que pagarás 💵"); return }
-    cambio=`Llevaremos cambio para Q${billete}.`
+  let cambio = ""
+  if (pago == "efectivo") {
+    let billete = parseFloat(document.getElementById("billete").value)
+    if (!billete || billete <= 0) { alert("Ingresa el monto con el que pagarás 💵"); return }
+    cambio = `Llevaremos cambio para Q${billete}.`
   }
-
-  mostrarConfirmacion(`✅ Pedido confirmado
-
-🍽️ ${comida}
-📍 ${direccion}
-💳 ${pago=="efectivo"?"Efectivo":"Tarjeta"}
-${cambio}`)
+  mostrarConfirmacion(`✅ Pedido confirmado\n\n🍽️ ${comida}\n📍 ${direccion}\n💳 ${pago=="efectivo"?"Efectivo":"Tarjeta"}\n${cambio}`)
 }
 
-function mostrarConfirmacion(msg){
-  let overlay=document.createElement("div")
-  overlay.id="modal-overlay"
-  overlay.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;"
-  overlay.innerHTML=`<div style="background:white;border-radius:16px;padding:28px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
+function mostrarConfirmacion(msg) {
+  let overlay = document.createElement("div")
+  overlay.id = "modal-overlay"
+  overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;"
+  overlay.innerHTML = `<div style="background:white;border-radius:16px;padding:28px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
     <div style="font-size:40px;margin-bottom:10px;">🛵</div>
     <p style="white-space:pre-line;font-size:14px;color:#333;line-height:1.6">${msg}</p>
     <button id="btn-cerrar-modal" style="margin-top:14px;width:100%;padding:12px;font-size:15px;font-weight:700;">Aceptar</button>
   </div>`
   document.body.appendChild(overlay)
-  document.getElementById("btn-cerrar-modal").addEventListener("click",()=>{
+  document.getElementById("btn-cerrar-modal").addEventListener("click", () => {
     document.getElementById("modal-overlay")?.remove()
     panelPaciente()
   })
 }
 
-function verNotificaciones(usuario){
-let p=pacientes.find(x=>x.usuario==usuario)
-if(p.notificaciones.length==0){alert("Sin notificaciones");return}
-p.notificaciones.forEach(n=>{
-let nueva=prompt("Nueva dieta para "+n.tipo+" del "+n.dia)
-p.dietasemanal[n.dia][n.tipo]=nueva
-})
-p.notificaciones=[]
-guardar()
-alert("Dietas actualizadas ✅")
+async function verNotificaciones(usuario) {
+  let p = await window._db.getPaciente(usuario)
+  if (!p.notificaciones || p.notificaciones.length == 0) { alert("Sin notificaciones"); return }
+  for (let n of p.notificaciones) {
+    let nueva = prompt("Nueva dieta para " + n.tipo + " del " + n.dia)
+    if (!p.dietasemanal) p.dietasemanal = {}
+    if (!p.dietasemanal[n.dia]) p.dietasemanal[n.dia] = {}
+    p.dietasemanal[n.dia][n.tipo] = nueva
+  }
+  p.notificaciones = []
+  await window._db.guardarPaciente(p)
+  alert("Dietas actualizadas ✅")
 }
 
-function verPaciente(usuario){
-let p=pacientes.find(x=>x.usuario==usuario)
-app.innerHTML=`
-<div class="card">
-<button onclick="dashboard()">⬅ Volver</button>
-<h2>${p.nombre}</h2>
-<p>Edad: ${p.edad}</p>
-<p>Peso: ${p.peso}</p>
-<p>Altura: ${p.altura}</p>
-<p>Objetivo: ${p.objetivo}</p>
-<p>Progreso: ${p.progreso}%</p>
-<p>Plan: <b>${p.plan||'básico'}</b></p>
-</div>`
+async function verPaciente(usuario) {
+  mostrarLoader("Cargando...")
+  let p = await window._db.getPaciente(usuario)
+  ocultarLoader()
+  app.innerHTML = `
+  <div class="card">
+    <button onclick="dashboard()">⬅ Volver</button>
+    <h2>${p.nombre}</h2>
+    <p>Edad: ${p.edad}</p>
+    <p>Peso: ${p.peso}</p>
+    <p>Altura: ${p.altura}</p>
+    <p>Objetivo: ${p.objetivo}</p>
+    <p>Progreso: ${p.progreso}%</p>
+    <p>Plan: <b>${p.plan||'básico'}</b></p>
+  </div>`
 }
 
-function ranking(){
-let orden=[...pacientes].sort((a,b)=>b.progreso-a.progreso)
-let html="<div class='card'><h2>🏆 Ranking</h2>"
-orden.forEach(p=>{html+=`<p>${p.nombre} - ${p.progreso}%</p>`})
-html+="</div>"
-app.innerHTML=html
+async function ranking() {
+  limpiarListeners()
+  mostrarLoader("Cargando ranking...")
+  let todos = await window._db.getTodosPacientes()
+  ocultarLoader()
+  let orden = todos.sort((a,b) => b.progreso - a.progreso)
+  let html = "<div class='card'><h2>🏆 Ranking</h2>"
+  orden.forEach(p => { html += `<p>${p.nombre} - ${p.progreso}%</p>` })
+  html += "</div>"
+  app.innerHTML = html
+}
+
+// ===== PLANES Y PAGO =====
+function pantallaPlanYPago(tipo, origen) {
+  planSeleccionado = null
+  app.innerHTML = `
+  <div class="card">
+    <button onclick="inicio()">⬅ Volver</button>
+    <h2 style="text-align:center">Elige tu plan 🌟</h2>
+    <p style="text-align:center;color:#666;font-size:14px;">Tu primer mes es <b>GRATIS</b> en cualquier plan</p>
+    <div id="seccion-planes">${renderPlanes(tipo,origen)}</div>
+    <p style="text-align:center;color:#aaa;font-size:13px;margin-top:10px;">👆 Haz clic en un plan para continuar</p>
+  </div>`
+}
+
+function pantallaPago(tipo, origen) {
+  app.innerHTML = `
+  <div class="card" style="text-align:center;padding:30px;">
+    <h2>Pasarela de pago 💳</h2>
+    ${planSeleccionado ? `<p>Plan seleccionado: <b style="color:#4CAF50">${PLANES[planSeleccionado].nombre} — $${PLANES[planSeleccionado].precio} USD/mes</b></p>` : ''}
+    <input id="numTarjeta" placeholder="Número de tarjeta (12 dígitos)" maxlength="12" style="width:80%;padding:10px;margin:5px;border-radius:6px;"><br>
+    <input id="fechaVenc" placeholder="MM/AA" maxlength="5" inputmode="numeric" oninput="formatearFecha(this)" style="width:40%;padding:10px;margin:5px;border-radius:6px;"><br>
+    <input id="cvv" placeholder="CVV" maxlength="3" style="width:20%;padding:10px;margin:5px;border-radius:6px;"><br><br>
+    <button onclick="procesarPago('${tipo}','${origen}')" style="padding:12px 20px;font-size:15px;font-weight:700;">Procesar pago 💳</button>
+  </div>`
+}
+
+async function procesarPago(tipo, origen) {
+  let tarjeta = document.getElementById("numTarjeta").value
+  let fecha = document.getElementById("fechaVenc").value
+  let cvv = document.getElementById("cvv").value
+  if (tarjeta.length != 12 || isNaN(tarjeta)) { alert("Número de tarjeta inválido ❌"); return }
+  if (cvv.length != 3 || isNaN(cvv)) { alert("CVV inválido ❌"); return }
+  if (!fecha.match(/^\d{2}\/\d{2}$/)) { alert("Fecha inválida ❌"); return }
+  alert("✅ Pago procesado")
+
+  mostrarLoader("Guardando en Firebase...")
+
+  if (origen == "registro" && tipo == "nutricionista") {
+    let temp = window._tempNutri
+    temp.plan = planSeleccionado || "basico"
+    await window._db.guardarNutri(temp)
+    ocultarLoader()
+    alert("Nutricionista registrado ✅")
+    loginNutri()
+    return
+  }
+  if (origen == "nutri") {
+    let temp = window._tempPaciente
+    temp.plan = planSeleccionado || "basico"
+    await window._db.guardarPaciente(temp)
+    ocultarLoader()
+    alert("Paciente creado correctamente ✅")
+    dashboard()
+    return
+  }
+  ocultarLoader()
+  if (tipo == "nutricionista") loginNutri()
+  else loginPaciente()
 }
 
 // ===== RETOS =====
@@ -888,85 +1068,89 @@ const INSIGNIAS = [
   {id:"ai_reto",     emoji:"🤖", nombre:"AI Warrior",  desc:"Completa un reto generado por AI"},
 ]
 
-function tieneInsignia(p, id){ return (p.insignias||[]).includes(id) }
+function tieneInsignia(p, id) { return (p.insignias||[]).includes(id) }
 
-function otorgarInsignia(p, id){
-  if(!p.insignias) p.insignias=[]
-  if(!p.insignias.includes(id)){
+async function otorgarInsignia(p, id) {
+  if (!p.insignias) p.insignias = []
+  if (!p.insignias.includes(id)) {
     p.insignias.push(id)
-    let ins = INSIGNIAS.find(i=>i.id==id)
-    setTimeout(()=>alert("🎖️ ¡Nueva insignia desbloqueada!\n"+ins.emoji+" "+ins.nombre+"\n\""+ins.desc+"\""), 300)
+    let ins = INSIGNIAS.find(i => i.id == id)
+    await window._db.guardarPaciente(p)
+    setTimeout(() => alert("🎖️ ¡Nueva insignia desbloqueada!\n" + ins.emoji + " " + ins.nombre + "\n\"" + ins.desc + "\""), 300)
   }
 }
 
-function completarReto(idx){
-  if(!pacienteActual) return
+async function completarReto(idx) {
+  if (!pacienteActual) return
   let retos = pacienteActual.retos || []
   let r = retos[idx]
-  if(!r || r.completado) return
+  if (!r || r.completado) return
   r.completado = true
   r.fechaCompletado = new Date().toDateString()
-  if(!pacienteActual.retosCompletados) pacienteActual.retosCompletados = 0
+  if (!pacienteActual.retosCompletados) pacienteActual.retosCompletados = 0
   pacienteActual.retosCompletados++
-  if(pacienteActual.retosCompletados === 1) otorgarInsignia(pacienteActual, "primer_reto")
-  if(pacienteActual.retosCompletados >= 5) otorgarInsignia(pacienteActual, "retos5")
-  if(pacienteActual.retosCompletados >= 10) otorgarInsignia(pacienteActual, "retos10")
-  if(r.esAI) otorgarInsignia(pacienteActual, "ai_reto")
-  guardar()
+  if (pacienteActual.retosCompletados === 1) await otorgarInsignia(pacienteActual, "primer_reto")
+  if (pacienteActual.retosCompletados >= 5) await otorgarInsignia(pacienteActual, "retos5")
+  if (pacienteActual.retosCompletados >= 10) await otorgarInsignia(pacienteActual, "retos10")
+  if (r.esAI) await otorgarInsignia(pacienteActual, "ai_reto")
+  await window._db.guardarPaciente(pacienteActual)
   paginaRetos()
 }
 
-async function generarRetoAI(){
-  if(!tieneAI()){ alert("🔒 Función disponible en planes Estándar y Premium"); return }
+async function generarRetoAI() {
+  if (!tieneAI()) { alert("🔒 Función disponible en planes Estándar y Premium"); return }
   let btn = document.getElementById("btn-generar-ai")
-  if(btn){ btn.disabled=true; btn.textContent="⏳ Generando..."}
+  if (btn) { btn.disabled = true; btn.textContent = "⏳ Generando..." }
   let promptText = "Eres un nutricionista experto. Genera UN reto nutricional creativo y motivador para este paciente. Responde SOLO con JSON así (sin markdown): {\"titulo\":\"...\",\"descripcion\":\"...\",\"duracion\":\"X días\",\"dificultad\":\"Fácil|Medio|Difícil\"}\nPaciente: Nombre: "+pacienteActual.nombre+", Objetivo: "+pacienteActual.objetivo+", Racha: "+pacienteActual.racha+" días."
   try {
-    const res = await fetch("/api/claude",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:300,messages:[{role:"user",content:promptText}]})
+    const res = await fetch("/api/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:300, messages:[{role:"user",content:promptText}] })
     })
     const data = await res.json()
-    let texto = data.content.map(b=>b.text||"").join("").replace(/```json|```/g,"").trim()
+    let texto = data.content.map(b => b.text || "").join("").replace(/```json|```/g, "").trim()
     let retoAI = JSON.parse(texto)
     retoAI.esAI = true; retoAI.completado = false; retoAI.fechaCreado = new Date().toDateString()
-    if(!pacienteActual.retos) pacienteActual.retos=[]
+    if (!pacienteActual.retos) pacienteActual.retos = []
     pacienteActual.retos.unshift(retoAI)
-    guardar()
+    await window._db.guardarPaciente(pacienteActual)
     paginaRetos()
-  } catch(e){
+  } catch(e) {
     alert("❌ Error al generar reto. Intenta de nuevo.")
-    if(btn){ btn.disabled=false; btn.textContent="🤖 Generar reto con AI" }
+    if (btn) { btn.disabled = false; btn.textContent = "🤖 Generar reto con AI" }
   }
 }
 
-function paginaRetos(){
-  if(!pacienteActual){
-    app.innerHTML=`<div class="card" style="text-align:center"><h2>🔥 Retos</h2><p style="color:#888">Inicia sesión como paciente para ver tus retos.</p></div>`
+function paginaRetos() {
+  if (!pacienteActual) {
+    app.innerHTML = `<div class="card" style="text-align:center"><h2>🔥 Retos</h2><p style="color:#888">Inicia sesión como paciente para ver tus retos.</p></div>`
     return
   }
-  if(!pacienteActual.retos) pacienteActual.retos = [
+  if (!pacienteActual.retos) pacienteActual.retos = [
     {titulo:"Completa todas tus comidas 7 días seguidos",descripcion:"Marca las 5 comidas del día durante una semana completa.",duracion:"7 días",dificultad:"Medio",completado:false,esAI:false,fechaCreado:new Date().toDateString()},
     {titulo:"Toma 8 vasos de agua al día",descripcion:"Mantente hidratado bebiendo al menos 2 litros de agua diariamente durante 5 días.",duracion:"5 días",dificultad:"Fácil",completado:false,esAI:false,fechaCreado:new Date().toDateString()},
     {titulo:"Sin azúcar refinada por 3 días",descripcion:"Evita dulces, refrescos y postres durante 3 días consecutivos.",duracion:"3 días",dificultad:"Difícil",completado:false,esAI:false,fechaCreado:new Date().toDateString()},
   ]
   let retos = pacienteActual.retos
   let totalRetos = pacienteActual.retosCompletados || 0
-
-  let insHtml = INSIGNIAS.map(ins=>{
+  let insHtml = INSIGNIAS.map(ins => {
     let tiene = tieneInsignia(pacienteActual, ins.id)
     return `<div title="${ins.desc}" style="text-align:center;opacity:${tiene?1:0.25};filter:${tiene?"none":"grayscale(1)"};padding:6px;"><div style="font-size:28px">${ins.emoji}</div><div style="font-size:10px;color:#666">${ins.nombre}</div></div>`
   }).join("")
 
-  let ranking = [...pacientes].sort((a,b)=>(b.retosCompletados||0)-(a.retosCompletados||0))
-  let rankHtml = ranking.slice(0,5).map((p,i)=>{
-    let medal = ["🥇","🥈","🥉","4️⃣","5️⃣"][i]
-    let esActual = p.usuario === pacienteActual.usuario
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:${esActual?"#e8f5e9":"#f9f9f9"};margin-bottom:6px;"><span>${medal} <b>${p.nombre}</b>${esActual?" (tú)":""}</span><span style="background:#4CAF50;color:white;border-radius:12px;padding:2px 10px;font-size:13px;">${p.retosCompletados||0} retos</span></div>`
-  }).join("")
+  window._db.getTodosPacientes().then(todos => {
+    let ranking = todos.sort((a,b) => (b.retosCompletados||0)-(a.retosCompletados||0))
+    let rankHtml = ranking.slice(0,5).map((p,i) => {
+      let medal = ["🥇","🥈","🥉","4️⃣","5️⃣"][i]
+      let esActual = p.usuario === pacienteActual.usuario
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:${esActual?"#e8f5e9":"#f9f9f9"};margin-bottom:6px;"><span>${medal} <b>${p.nombre}</b>${esActual?" (tú)":""}</span><span style="background:#4CAF50;color:white;border-radius:12px;padding:2px 10px;font-size:13px;">${p.retosCompletados||0} retos</span></div>`
+    }).join("")
+    let rankDiv = document.getElementById("ranking-retos")
+    if (rankDiv) rankDiv.innerHTML = rankHtml || "<p style=\"color:#aaa\">Aún no hay datos.</p>"
+  })
 
-  let retosHtml = retos.map((r,i)=>{
+  let retosHtml = retos.map((r,i) => {
     let difColor = r.dificultad=="Fácil"?"#66BB6A":r.dificultad=="Medio"?"#FFA726":"#EF5350"
     return `<div style="border:1px solid #eee;border-radius:10px;padding:14px;margin-bottom:10px;background:${r.completado?"#f1f8e9":"white"}">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
@@ -981,7 +1165,7 @@ function paginaRetos(){
     </div>`
   }).join("")
 
-  app.innerHTML=`
+  app.innerHTML = `
   <div class="card">
     <h2>🔥 Retos</h2>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -996,90 +1180,25 @@ function paginaRetos(){
   </div>
   <div class="card">
     <h3>🏆 Tabla de posiciones</h3>
-    ${rankHtml||"<p style=\"color:#aaa\">Aún no hay datos.</p>"}
+    <div id="ranking-retos"><p style="color:#aaa">Cargando...</p></div>
   </div>
   <div class="card">
     <h3>💪 Mis retos</h3>
-    ${tieneAI()?`<button id="btn-generar-ai" onclick="generarRetoAI()" style="background:#7C4DFF;width:100%;margin-bottom:12px;">🤖 Generar reto personalizado con AI</button>`:`<div class="ai-locked" style="margin-bottom:12px;">🔒 Retos AI disponibles en <b>Estándar</b> y <b>Premium</b>. <span style="color:#4CAF50;cursor:pointer;" onclick="verPrecios()">Ver planes →</span></div>`}
+    ${tieneAI() ? `<button id="btn-generar-ai" onclick="generarRetoAI()" style="background:#7C4DFF;width:100%;margin-bottom:12px;">🤖 Generar reto personalizado con AI</button>` : `<div class="ai-locked" style="margin-bottom:12px;">🔒 Retos AI disponibles en <b>Estándar</b> y <b>Premium</b>. <span style="color:#4CAF50;cursor:pointer;" onclick="verPrecios()">Ver planes →</span></div>`}
     ${retosHtml}
   </div>`
 }
 
-function reto(){ paginaRetos() }
-// ===== FIN RETOS =====
+function reto() { paginaRetos() }
+function modoOscuro() { document.body.classList.toggle("dark") }
 
-function modoOscuro(){document.body.classList.toggle("dark")}
-
-// ===== PANTALLA PLAN + PAGO =====
-function pantallaPlanYPago(tipo, origen){
-  planSeleccionado=null
-  app.innerHTML=`
-  <div class="card">
-    <button onclick="inicio()">⬅ Volver</button>
-    <h2 style="text-align:center">Elige tu plan 🌟</h2>
-    <p style="text-align:center;color:#666;font-size:14px;">Tu primer mes es <b>GRATIS</b> en cualquier plan</p>
-    <div id="seccion-planes">${renderPlanes(tipo,origen)}</div>
-    <p style="text-align:center;color:#aaa;font-size:13px;margin-top:10px;">👆 Haz clic en un plan para continuar</p>
-  </div>`
-}
-
-function pantallaPago(tipo, origen){
-app.innerHTML=`
-<div class="card" style="text-align:center;padding:30px;">
-<h2>Pasarela de pago 💳</h2>
-${planSeleccionado?`<p>Plan seleccionado: <b style="color:#4CAF50">${PLANES[planSeleccionado].nombre} — $${PLANES[planSeleccionado].precio} USD/mes</b></p>`:''}
-<input id="numTarjeta" placeholder="Número de tarjeta (12 dígitos)" maxlength="12" style="width:80%;padding:10px;margin:5px;border-radius:6px;"><br>
-<input id="fechaVenc" placeholder="MM/AA" maxlength="5" inputmode="numeric" oninput="formatearFecha(this)" style="width:40%;padding:10px;margin:5px;border-radius:6px;"><br>
-<input id="cvv" placeholder="CVV" maxlength="3" style="width:20%;padding:10px;margin:5px;border-radius:6px;"><br><br>
-<button onclick="procesarPago('${tipo}','${origen}')" style="padding:12px 20px;font-size:15px;font-weight:700;">
-Procesar pago 💳
-</button>
-</div>`
-}
-
-function procesarPago(tipo, origen){
-let tarjeta=document.getElementById("numTarjeta").value
-let fecha=document.getElementById("fechaVenc").value
-let cvv=document.getElementById("cvv").value
-if(tarjeta.length!=12||isNaN(tarjeta)){alert("Número de tarjeta inválido ❌");return}
-if(cvv.length!=3||isNaN(cvv)){alert("CVV inválido ❌");return}
-if(!fecha.match(/^\d{2}\/\d{2}$/)){alert("Fecha inválida ❌");return}
-alert("✅ Pago procesado")
-
-if(origen=="registro"&&tipo=="nutricionista"){
-let temp=JSON.parse(localStorage.getItem("tempNutri"))
-temp.plan=planSeleccionado||"basico"
-nutricionistas.push(temp)
-guardar()
-localStorage.removeItem("tempNutri")
-alert("Nutricionista registrado ✅")
-loginNutri()
-return
-}
-if(origen=="nutri"){
-let temp=JSON.parse(localStorage.getItem("tempPaciente"))
-temp.plan=planSeleccionado||"basico"
-pacientes.push(temp)
-guardar()
-localStorage.removeItem("tempPaciente")
-alert("Paciente creado correctamente ✅")
-dashboard()
-return
-}
-if(tipo=="nutricionista") loginNutri()
-else loginPaciente()
-}
-
-// ===== AI FEATURES =====
-let chatHistory = []
-
-function tieneAI(){
+function tieneAI() {
   return ['estandar','premium'].includes(pacienteActual?.plan)
 }
 
-async function analisisProgreso(){
-  if(!tieneAI()) return
-  app.innerHTML=`
+async function analisisProgreso() {
+  if (!tieneAI()) return
+  app.innerHTML = `
   <div class="card">
     <button onclick="panelPaciente()">⬅ Volver</button>
     <h2>📊 Análisis AI de tu progreso</h2>
@@ -1089,45 +1208,33 @@ async function analisisProgreso(){
   </div>`
 
   let hoy = diaActual()
-  let marcadas = Object.values(pacienteActual.comidas).filter(v=>v).length
-  let dietaHoy = pacienteActual.dietasemanal[hoy] || {}
+  let marcadas = Object.values(pacienteActual.comidas).filter(v => v).length
+  let dietaHoy = pacienteActual.dietasemanal?.[hoy] || {}
 
-  let promptText = `Eres un nutricionista experto. Analiza el progreso de este paciente y da retroalimentación motivadora y consejos concretos en español.
-Datos del paciente:
-- Nombre: ${pacienteActual.nombre}
-- Objetivo: ${pacienteActual.objetivo}
-- Calorías diarias: ${pacienteActual.calorias} kcal
-- Progreso de hoy: ${pacienteActual.progreso}% (${marcadas}/5 comidas marcadas)
-- Racha actual: ${pacienteActual.racha} días consecutivos completados
-- Dieta de hoy (${hoy}): Desayuno: ${dietaHoy.desayuno||'no asignado'}, Almuerzo: ${dietaHoy.almuerzo||'no asignado'}, Cena: ${dietaHoy.cena||'no asignado'}
-Da un análisis breve (3-4 párrafos) con: evaluación del día, motivación según su racha, y 2 consejos prácticos.`
+  let promptText = `Eres un nutricionista experto. Analiza el progreso de este paciente y da retroalimentación motivadora y consejos concretos en español.\nDatos del paciente:\n- Nombre: ${pacienteActual.nombre}\n- Objetivo: ${pacienteActual.objetivo}\n- Calorías diarias: ${pacienteActual.calorias} kcal\n- Progreso de hoy: ${pacienteActual.progreso}% (${marcadas}/5 comidas marcadas)\n- Racha actual: ${pacienteActual.racha} días consecutivos completados\n- Dieta de hoy (${hoy}): Desayuno: ${dietaHoy.desayuno||'no asignado'}, Almuerzo: ${dietaHoy.almuerzo||'no asignado'}, Cena: ${dietaHoy.cena||'no asignado'}\nDa un análisis breve (3-4 párrafos) con: evaluación del día, motivación según su racha, y 2 consejos prácticos.`
 
   try {
     const res = await fetch("/api/claude", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        messages:[{role:"user", content: promptText}]
-      })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, messages:[{role:"user", content:promptText}] })
     })
     const data = await res.json()
-    const texto = data.content.map(b=>b.text||'').join('')
-    document.getElementById("analisis-resultado").innerHTML = texto.replace(/\n/g,'<br>')
+    const texto = data.content.map(b => b.text || '').join('')
+    document.getElementById("analisis-resultado").innerHTML = texto.replace(/\n/g, '<br>')
   } catch(e) {
     document.getElementById("analisis-resultado").innerHTML = "❌ Error al conectar con AI. Intenta de nuevo."
   }
 }
 
-async function chatNutriAI(){
-  if(!tieneAI()) return
+async function chatNutriAI() {
+  if (!tieneAI()) return
   chatHistory = []
   renderChat()
 }
 
-function renderChat(){
-  app.innerHTML=`
+function renderChat() {
+  app.innerHTML = `
   <div class="card">
     <button onclick="panelPaciente()">⬅ Volver</button>
     <h2>💬 Nutricionista AI</h2>
@@ -1142,44 +1249,34 @@ function renderChat(){
   </div>`
 }
 
-async function enviarChat(){
+async function enviarChat() {
   let input = document.getElementById("chat-input")
   let texto = input.value.trim()
-  if(!texto) return
+  if (!texto) return
   input.value = ""
-
   let box = document.getElementById("chat-box")
-
   let msgUser = document.createElement("div")
   msgUser.className = "msg user"
   msgUser.textContent = texto
   box.appendChild(msgUser)
-
   let msgLoading = document.createElement("div")
   msgLoading.className = "msg loading"
   msgLoading.textContent = "✍️ Escribiendo..."
   box.appendChild(msgLoading)
   box.scrollTop = box.scrollHeight
+  chatHistory.push({ role:"user", content: texto })
 
-  chatHistory.push({role:"user", content: texto})
-
-  let systemPrompt = `Eres un nutricionista amable y experto. Responde en español de forma concisa (máximo 3 oraciones).
-Contexto del paciente: Nombre: ${pacienteActual.nombre}, Objetivo: ${pacienteActual.objetivo}, Calorías: ${pacienteActual.calorias} kcal/día, Plan: ${pacienteActual.plan}.`
+  let systemPrompt = `Eres un nutricionista amable y experto. Responde en español de forma concisa (máximo 3 oraciones).\nContexto del paciente: Nombre: ${pacienteActual.nombre}, Objetivo: ${pacienteActual.objetivo}, Calorías: ${pacienteActual.calorias} kcal/día, Plan: ${pacienteActual.plan}.`
 
   try {
     const res = await fetch("/api/claude", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        system: systemPrompt,
-        messages: chatHistory
-      })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, system: systemPrompt, messages: chatHistory })
     })
     const data = await res.json()
-    const respuesta = data.content.map(b=>b.text||'').join('')
-    chatHistory.push({role:"assistant", content: respuesta})
+    const respuesta = data.content.map(b => b.text || '').join('')
+    chatHistory.push({ role:"assistant", content: respuesta })
     msgLoading.remove()
     let msgAI = document.createElement("div")
     msgAI.className = "msg ai"
@@ -1190,9 +1287,12 @@ Contexto del paciente: Nombre: ${pacienteActual.nombre}, Objetivo: ${pacienteAct
     msgLoading.textContent = "❌ Error al conectar. Intenta de nuevo."
   }
 }
-// ===== FIN AI =====
 
-inicio()
+// ===== ARRANCAR APP =====
+esperarDB().then(() => {
+  ocultarLoader()
+  inicio()
+})
 </script>
 </body>
 </html>
