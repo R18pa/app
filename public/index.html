@@ -167,7 +167,7 @@ input,select{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;wid
 <div class="container" id="app">
   <div class="loading-overlay" id="loading-inicial">
     <div class="spinner"></div>
-    <span>Conectando con Firebase...</span>
+    <span>Iniciando NutriTrack...</span>
   </div>
 </div>
 
@@ -190,7 +190,14 @@ let chatHistory = []
 function esperarDB() {
   return new Promise(resolve => {
     if (window._dbReady) { resolve(); return; }
-    window.addEventListener('dbReady', resolve, { once: true });
+    const timeout = setTimeout(() => {
+      console.warn("Firebase tardó demasiado, arrancando sin esperar.");
+      resolve();
+    }, 4000); // máximo 4 segundos de espera
+    window.addEventListener('dbReady', () => {
+      clearTimeout(timeout);
+      resolve();
+    }, { once: true });
   });
 }
 
