@@ -377,6 +377,7 @@ async function registrarNutri() {
 async function entrarNutri() {
   let u = document.getElementById("userNutri").value.trim()
   let p = document.getElementById("passNutri").value
+  if (!window._dbReady) { mostrarLoader("Conectando con Firebase..."); await esperarDB() }
   mostrarLoader("Verificando...")
   const nutri = await window._db.getNutri(u)
   ocultarLoader()
@@ -683,6 +684,7 @@ async function cambiarPassword(tipo) {
 async function entrarPaciente() {
   let u = document.getElementById("userPaciente").value.trim()
   let p = document.getElementById("passPaciente").value
+  if (!window._dbReady) { mostrarLoader("Conectando con Firebase..."); await esperarDB() }
   mostrarLoader("Verificando...")
   const pac = await window._db.getPaciente(u)
   ocultarLoader()
@@ -1296,10 +1298,9 @@ async function enviarChat() {
 }
 
 // ===== ARRANCAR APP =====
-esperarDB().then(() => {
-  ocultarLoader()
-  inicio()
-})
+// La app arranca INMEDIATAMENTE, Firebase conecta en segundo plano
+ocultarLoader()
+inicio()
 </script>
 </body>
 </html>
