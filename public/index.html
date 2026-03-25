@@ -165,10 +165,11 @@ input,select{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;wid
 </header>
 
 <div class="container" id="app">
-  <div class="loading-overlay" id="loading-inicial">
-    <div class="spinner"></div>
-    <span>Iniciando NutriTrack...</span>
-  </div>
+</div>
+<!-- Loader global fijo, fuera de #app para que no sea destruido por app.innerHTML -->
+<div class="loading-overlay" id="loader-global" style="display:flex;">
+  <div class="spinner"></div>
+  <span>Iniciando NutriTrack...</span>
 </div>
 
 <div class="nav">
@@ -203,10 +204,11 @@ function esperarDB() {
 
 // ===== LOADER =====
 function mostrarLoader(msg = "Cargando...") {
-  let l = document.getElementById("loading-inicial")
+  // Usar siempre el loader fijo del body (nunca dentro de #app que se destruye)
+  let l = document.getElementById("loader-global")
   if (!l) {
     l = document.createElement("div")
-    l.id = "loading-temporal"
+    l.id = "loader-global"
     l.className = "loading-overlay"
     document.body.appendChild(l)
   }
@@ -214,7 +216,8 @@ function mostrarLoader(msg = "Cargando...") {
   l.style.display = "flex"
 }
 function ocultarLoader() {
-  ["loading-inicial","loading-temporal"].forEach(id => {
+  // Ocultar todos los posibles loaders
+  ["loading-inicial","loading-temporal","loader-global"].forEach(id => {
     let el = document.getElementById(id)
     if (el) el.style.display = "none"
   })
