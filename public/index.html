@@ -425,7 +425,7 @@ function renderDashboardCompleto(misPacientes) {
     lista += `
     <div class="card">
       <b>${p.nombre}</b> <span style="font-size:12px;color:#888;background:#f0f0f0;padding:2px 8px;border-radius:10px;">${p.plan||'básico'}</span><br>
-      ${p.progreso}% progreso<br>
+      ${p.fecha === new Date().toDateString() ? p.progreso + '% hoy' : '0% hoy (sin actividad)' }<br>
       <button onclick="crearDietaSemanal('${p.usuario}')">Dieta semanal</button>
       <button onclick="verNotificaciones('${p.usuario}')">Notificaciones</button>
       <button onclick="verPaciente('${p.usuario}')">Ver</button>
@@ -484,16 +484,30 @@ function renderDashboardCompleto(misPacientes) {
 function renderDashboardNutri(misPacientes) {
   let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
   let labels = dias.map(d => d.charAt(0).toUpperCase() + d.slice(1, 3))
+
+  // Calcular el Date de cada día de la semana actual
+  function getFechaParaDia(nombreDia) {
+    const mapa = {lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6,domingo:0}
+    let hoy = new Date()
+    let diaHoy = hoy.getDay() // 0=domingo
+    let diff = mapa[nombreDia] - diaHoy
+    let fecha = new Date(hoy)
+    fecha.setDate(hoy.getDate() + diff)
+    return fecha.toDateString() // mismo formato que historialComidas
+  }
+
   let data = dias.map(dia => {
-    let total = 0, cumplieron = 0
+    let fechaDia = getFechaParaDia(dia)
+    let cumplieron = 0, conDieta = 0
     misPacientes.forEach(p => {
       let dieta = p.dietasemanal?.[dia]
-      if (dieta && Object.values(dieta).some(v => v)) {
-        total++
-        if (p.progreso >= 100) cumplieron++
-      }
+      if (!dieta || !Object.values(dieta).some(v => v)) return // sin dieta asignada ese día
+      conDieta++
+      // Buscar en el historial si ese día específico tuvo 5 comidas
+      let entrada = (p.historialComidas || []).find(h => h.fecha === fechaDia)
+      if (entrada && entrada.comidas && entrada.comidas.length >= 5) cumplieron++
     })
-    return total > 0 ? Math.round((cumplieron / misPacientes.length) * 100) : 0
+    return conDieta > 0 ? Math.round((cumplieron / conDieta) * 100) : 0
   })
 
   let ctx = document.getElementById("grafica-nutri")
