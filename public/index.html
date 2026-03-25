@@ -377,13 +377,20 @@ async function registrarNutri() {
 async function entrarNutri() {
   let u = document.getElementById("userNutri").value.trim()
   let p = document.getElementById("passNutri").value
+  if (!u || !p) { alert("Completa todos los campos"); return }
   if (!window._dbReady) { mostrarLoader("Conectando con Firebase..."); await esperarDB() }
   mostrarLoader("Verificando...")
-  const nutri = await window._db.getNutri(u)
-  ocultarLoader()
-  if (!nutri || nutri.pass !== p) { alert("Credenciales incorrectas"); return }
-  nutriActual = nutri
-  dashboard()
+  try {
+    const nutri = await window._db.getNutri(u)
+    ocultarLoader()
+    if (!nutri || nutri.pass !== p) { alert("Credenciales incorrectas ❌"); return }
+    nutriActual = nutri
+    dashboard()
+  } catch(err) {
+    ocultarLoader()
+    console.error("Error al iniciar sesión:", err)
+    alert("Error de conexión con Firebase ❌ Revisa tu internet e inténtalo de nuevo.")
+  }
 }
 
 // ===== DASHBOARD NUTRICIONISTA (con tiempo real) =====
@@ -392,9 +399,16 @@ async function dashboard() {
   mostrarLoader("Cargando dashboard...")
 
   // Primera carga
-  let misPacientes = await window._db.getPacientesDeNutri(nutriActual.user)
-  ocultarLoader()
-  renderDashboardCompleto(misPacientes)
+  try {
+    let misPacientes = await window._db.getPacientesDeNutri(nutriActual.user)
+    ocultarLoader()
+    renderDashboardCompleto(misPacientes)
+  } catch(err) {
+    ocultarLoader()
+    console.error("Error cargando dashboard:", err)
+    alert("Error al cargar el dashboard ❌ Revisa tu conexión.")
+    return
+  }
 
   // Escuchar cambios en tiempo real
   _unsubscribeNutri = window._db.escucharPacientesNutri(nutriActual.user, (pacientes) => {
