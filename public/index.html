@@ -1045,27 +1045,37 @@ async function procesarPago(tipo, origen) {
 
   mostrarLoader("Guardando en Firebase...")
 
-  if (origen == "registro" && tipo == "nutricionista") {
-    let temp = window._tempNutri
-    temp.plan = planSeleccionado || "basico"
-    await window._db.guardarNutri(temp)
+  try {
+    if (origen == "registro" && tipo == "nutricionista") {
+      let temp = window._tempNutri
+      if (!temp) { ocultarLoader(); alert("Error: datos de registro perdidos. Por favor regístrate de nuevo ❌"); loginNutri(); return }
+      temp.plan = planSeleccionado || "basico"
+      await window._db.guardarNutri(temp)
+      window._tempNutri = null
+      ocultarLoader()
+      alert("Nutricionista registrado ✅")
+      loginNutri()
+      return
+    }
+    if (origen == "nutri") {
+      let temp = window._tempPaciente
+      if (!temp) { ocultarLoader(); alert("Error: datos del paciente perdidos. Por favor inténtalo de nuevo ❌"); dashboard(); return }
+      temp.plan = planSeleccionado || "basico"
+      await window._db.guardarPaciente(temp)
+      window._tempPaciente = null
+      ocultarLoader()
+      alert("Paciente creado correctamente ✅")
+      dashboard()
+      return
+    }
     ocultarLoader()
-    alert("Nutricionista registrado ✅")
-    loginNutri()
-    return
-  }
-  if (origen == "nutri") {
-    let temp = window._tempPaciente
-    temp.plan = planSeleccionado || "basico"
-    await window._db.guardarPaciente(temp)
+    if (tipo == "nutricionista") loginNutri()
+    else loginPaciente()
+  } catch(err) {
     ocultarLoader()
-    alert("Paciente creado correctamente ✅")
-    dashboard()
-    return
+    console.error("Error guardando en Firebase:", err)
+    alert("Error al guardar en Firebase ❌ Revisa tu conexión e inténtalo de nuevo.")
   }
-  ocultarLoader()
-  if (tipo == "nutricionista") loginNutri()
-  else loginPaciente()
 }
 
 // ===== RETOS =====
