@@ -120,7 +120,9 @@ body {
   border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  transition: transform .2s ease, box-shadow .2s ease;
 }
+.logo-mark:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(22,163,74,.35); }
 .logo-text-wrap { display: flex; flex-direction: column; line-height: 1.15; }
 .logo-name {
   font-family: 'Sora', sans-serif;
@@ -156,13 +158,13 @@ body {
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: var(--trans);
 }
-.tb-btn:hover { background: var(--surface2); color: var(--text); }
+.tb-btn:hover { background: var(--surface2); color: var(--text); transform: scale(1.05); }
+.tb-btn:active { transform: scale(0.95); }
 
-/* hamburger - solo visible en mobile */
 #btn-hamburger { display: none; }
 
 /* ═══════════════════════════════════════
-   SIDEBAR — ENTERPRISE PREMIUM
+   SIDEBAR
 ═══════════════════════════════════════ */
 #sidebar-overlay {
   position: fixed; inset: 0;
@@ -194,7 +196,6 @@ body {
   box-shadow: 20px 0 60px rgba(15,23,42,.14), 4px 0 16px rgba(15,23,42,.06);
 }
 
-/* Perfil premium */
 .sb-profile {
   padding: 22px 16px 18px;
   border-bottom: 1px solid var(--border);
@@ -239,7 +240,6 @@ body {
 .sb-plan-badge.estandar { background: linear-gradient(90deg,#fef3c7,#fde68a); color: #92400e; border: 1px solid #fcd34d; }
 .sb-plan-badge.premium  { background: linear-gradient(90deg,#dcfce7,#bbf7d0); color: var(--green-dark); border: 1px solid var(--green-muted); }
 
-/* Secciones sidebar */
 .sb-section { padding: 8px 0; border-bottom: 1px solid rgba(226,232,240,.6); }
 .sb-section:last-child { border-bottom: none; padding-bottom: 20px; }
 .sb-section-label {
@@ -248,7 +248,6 @@ body {
   padding: 6px 20px 6px;
 }
 
-/* ─── BOTÓN SIDEBAR PREMIUM ─── */
 .sb-item {
   position: relative;
   display: flex; align-items: center; gap: 11px;
@@ -265,8 +264,6 @@ body {
   overflow: hidden;
   letter-spacing: -.1px;
 }
-
-/* Línea izquierda acento */
 .sb-item::before {
   content: '';
   position: absolute; left: 0; top: 50%;
@@ -275,8 +272,6 @@ body {
   transform: translateY(-50%);
   transition: height .2s cubic-bezier(.4,0,.2,1);
 }
-
-/* Fondo hover shimmer */
 .sb-item::after {
   content: '';
   position: absolute; inset: 0;
@@ -285,7 +280,6 @@ body {
   transition: opacity .2s ease;
   pointer-events: none;
 }
-
 .sb-item:hover {
   background: rgba(241,245,249,.85);
   color: var(--text);
@@ -295,6 +289,7 @@ body {
 }
 .sb-item:hover::before { height: 60%; }
 .sb-item:hover::after { opacity: 1; }
+.sb-item:active { transform: translateX(2px) scale(0.98); }
 
 .sb-item.active {
   background: linear-gradient(90deg, rgba(220,252,231,.9) 0%, rgba(220,252,231,.4) 100%);
@@ -306,7 +301,6 @@ body {
 .sb-item.active::before { height: 65%; }
 .sb-item.active svg { stroke: var(--green-dark); }
 
-/* Ícono wrapper */
 .sb-item .sb-icon-wrap {
   width: 28px; height: 28px; border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
@@ -314,24 +308,14 @@ body {
   background: var(--surface2);
   transition: all .2s ease;
 }
-.sb-item:hover .sb-icon-wrap {
-  background: white;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08);
-}
-.sb-item.active .sb-icon-wrap {
-  background: var(--green);
-  box-shadow: 0 2px 8px rgba(22,163,74,.3);
-}
+.sb-item:hover .sb-icon-wrap { background: white; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.sb-item.active .sb-icon-wrap { background: var(--green); box-shadow: 0 2px 8px rgba(22,163,74,.3); }
 .sb-item.active .sb-icon-wrap svg { stroke: white; }
 
 .sb-item svg { flex-shrink: 0; transition: all .2s ease; }
 .sb-item:not(.active) svg { opacity: .65; }
 .sb-item:hover svg { opacity: 1; }
-
-/* Texto label */
 .sb-item .sb-label { flex: 1; }
-
-/* Badge numérico en ítem */
 .sb-item .sb-badge {
   background: var(--green); color: #fff;
   font-size: 9.5px; font-weight: 800;
@@ -340,19 +324,13 @@ body {
   line-height: 1.5;
 }
 
-/* Botón danger premium */
 .sb-item.danger { color: #ef4444; }
 .sb-item.danger .sb-icon-wrap { background: #fee2e2; }
 .sb-item.danger .sb-icon-wrap svg { stroke: #ef4444; opacity: 1; }
 .sb-item.danger::before { background: #ef4444; }
-.sb-item.danger:hover {
-  background: rgba(254,226,226,.5);
-  color: #dc2626;
-  border-color: rgba(254,202,202,.6);
-}
+.sb-item.danger:hover { background: rgba(254,226,226,.5); color: #dc2626; border-color: rgba(254,202,202,.6); }
 .sb-item.danger:hover .sb-icon-wrap { background: #fca5a5; box-shadow: 0 1px 4px rgba(220,38,38,.15); }
 
-/* Botón CTA dentro de sidebar (upgrade) */
 .sb-cta-btn {
   display: flex; align-items: center; gap: 9px;
   margin: 4px 10px 2px;
@@ -379,6 +357,7 @@ body {
 }
 .sb-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(22,163,74,.38), 0 2px 6px rgba(22,163,74,.2); }
 .sb-cta-btn:hover::before { left: 140%; }
+.sb-cta-btn:active { transform: translateY(0) scale(0.98); }
 .sb-cta-btn .sb-cta-icon {
   width: 26px; height: 26px; border-radius: 6px;
   background: rgba(255,255,255,.18);
@@ -386,13 +365,7 @@ body {
   flex-shrink: 0;
 }
 
-/* Separador con label */
-.sb-divider {
-  height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent);
-  margin: 4px 16px;
-}
-
-/* Indicador "nuevo" */
+.sb-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 4px 16px; }
 .sb-new-dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--green);
@@ -404,18 +377,11 @@ body {
 /* ═══════════════════════════════════════
    CONTENIDO PRINCIPAL
 ═══════════════════════════════════════ */
-#main-wrap {
-  padding-top: var(--header-h);
-  min-height: 100vh;
-}
-.container {
-  padding: 24px 16px 100px;
-  max-width: 880px;
-  margin: 0 auto;
-}
+#main-wrap { padding-top: var(--header-h); min-height: 100vh; }
+.container { padding: 24px 16px 100px; max-width: 880px; margin: 0 auto; }
 
 /* ═══════════════════════════════════════
-   CARDS
+   CARDS — con animación de entrada
 ═══════════════════════════════════════ */
 .card {
   background: var(--surface);
@@ -424,28 +390,27 @@ body {
   padding: 22px 20px;
   margin-top: 14px;
   box-shadow: var(--shadow-sm);
+  animation: cardIn .28s cubic-bezier(.22,1,.36,1) both;
 }
 .card:first-child { margin-top: 0; }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 .card-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 18px; padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
 }
-.card-title {
-  font-family: 'Sora', sans-serif;
-  font-size: 16px; font-weight: 700; color: var(--text);
-  letter-spacing: -.2px;
-}
+.card-title { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -.2px; }
 .card-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
 
 /* ═══════════════════════════════════════
-   BOTONES
+   BOTONES — con micro-animaciones
 ═══════════════════════════════════════ */
-button {
-  font-family: 'Inter', sans-serif;
-  cursor: pointer; border: none; outline: none;
-}
+button { font-family: 'Inter', sans-serif; cursor: pointer; border: none; outline: none; }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
@@ -456,12 +421,15 @@ button {
 }
 .btn-primary   { background: var(--green); color: #fff; }
 .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(22,163,74,.3); }
+.btn-primary:active { transform: translateY(0) scale(0.97); box-shadow: none; }
 .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border2); }
-.btn-secondary:hover { background: var(--surface2); }
+.btn-secondary:hover { background: var(--surface2); transform: translateY(-1px); }
+.btn-secondary:active { transform: scale(0.97); }
 .btn-ghost     { background: transparent; color: var(--text2); padding: 8px 12px; }
 .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-ghost:active { transform: scale(0.97); }
 .btn-danger    { background: var(--red); color: #fff; }
-.btn-danger:hover { background: #b91c1c; }
+.btn-danger:hover { background: #b91c1c; transform: translateY(-1px); }
 .btn-gold      { background: var(--gold); color: #fff; }
 .btn-gold:hover { background: #b45309; }
 .btn-full { width: 100%; }
@@ -472,23 +440,20 @@ button {
    INPUTS
 ═══════════════════════════════════════ */
 .input-group { margin-bottom: 14px; }
-.input-label {
-  display: block; font-size: 12px; font-weight: 600;
-  color: var(--text2); margin-bottom: 6px; letter-spacing: .2px;
-}
-.input-field, input:not([type=hidden]):not([type=checkbox]):not([type=radio]),
-select {
+.input-label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; letter-spacing: .2px; }
+.input-field, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select {
   width: 100%; padding: 10px 13px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 13.5px; font-family: 'Inter', sans-serif;
   color: var(--text); background: var(--surface);
-  transition: border-color .18s, box-shadow .18s;
+  transition: border-color .18s, box-shadow .18s, transform .15s;
   outline: none; margin: 0;
 }
 .input-field:focus, input:focus, select:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+  transform: translateY(-1px);
 }
 .input-field::placeholder, input::placeholder { color: var(--text3); }
 .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -496,13 +461,10 @@ select {
 /* ═══════════════════════════════════════
    PROGRESS
 ═══════════════════════════════════════ */
-.progress {
-  background: var(--surface2);
-  height: 10px; border-radius: 99px; overflow: hidden;
-}
+.progress { background: var(--surface2); height: 10px; border-radius: 99px; overflow: hidden; }
 .bar {
   height: 100%; background: var(--green); border-radius: 99px;
-  transition: width .5s ease;
+  transition: width .7s cubic-bezier(.22,1,.36,1);
   display: flex; align-items: center; justify-content: flex-end;
   padding-right: 6px; font-size: 9px; font-weight: 700; color: #fff;
 }
@@ -510,57 +472,35 @@ select {
 /* ═══════════════════════════════════════
    PLANES
 ═══════════════════════════════════════ */
-.planes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 14px; margin-top: 10px;
-}
+.planes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 10px; }
 .plan-card {
   background: var(--surface);
   border-radius: var(--radius-lg); overflow: hidden;
   border: 2px solid var(--border);
   position: relative; cursor: pointer;
   transition: var(--trans);
+  animation: cardIn .3s ease both;
 }
-.plan-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--border2); }
+.plan-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--border2); }
+.plan-card:active { transform: translateY(-2px); }
 .plan-card.selected { border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,.15); }
-.plan-tag {
-  background: var(--green-light); color: var(--green-dark);
-  text-align: center; padding: 6px;
-  font-size: 11px; font-weight: 700; letter-spacing: .5px;
-}
+.plan-tag { background: var(--green-light); color: var(--green-dark); text-align: center; padding: 6px; font-size: 11px; font-weight: 700; letter-spacing: .5px; }
 .plan-body { padding: 18px; }
-.plan-nombre {
-  font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700;
-  color: var(--text); margin-bottom: 4px;
-}
-.plan-popular {
-  background: var(--gold); color: #fff;
-  border-radius: 99px; font-size: 10px; font-weight: 700;
-  padding: 2px 9px; margin-left: 7px; vertical-align: middle;
-}
+.plan-nombre { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.plan-popular { background: var(--gold); color: #fff; border-radius: 99px; font-size: 10px; font-weight: 700; padding: 2px 9px; margin-left: 7px; vertical-align: middle; }
 .plan-features { list-style: none; margin: 12px 0; }
-.plan-features li {
-  font-size: 13px; color: var(--text2); padding: 4px 0;
-  display: flex; gap: 7px; align-items: flex-start;
-}
+.plan-features li { font-size: 13px; color: var(--text2); padding: 4px 0; display: flex; gap: 7px; align-items: flex-start; }
 .plan-features li::before {
   content: '';
   width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px;
   background: var(--green-light) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpolyline points='2,7 5.5,10.5 12,4' fill='none' stroke='%2316a34a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/10px no-repeat;
   border-radius: 50%;
 }
-.plan-precio {
-  font-family: 'Sora', sans-serif; font-size: 30px; font-weight: 800;
-  color: var(--text); margin: 14px 0 3px; line-height: 1;
-}
+.plan-precio { font-family: 'Sora', sans-serif; font-size: 30px; font-weight: 800; color: var(--text); margin: 14px 0 3px; line-height: 1; }
 .plan-precio span { font-size: 13px; font-weight: 400; color: var(--text3); }
 .plan-sub { font-size: 11px; color: var(--text3); margin-bottom: 14px; }
-.btn-plan {
-  width: 100%; padding: 11px; border-radius: var(--radius-sm);
-  font-size: 13.5px; font-weight: 700; cursor: pointer;
-  transition: var(--trans); border: none;
-}
+.btn-plan { width: 100%; padding: 11px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 700; cursor: pointer; transition: var(--trans); border: none; }
+.btn-plan:active { transform: scale(0.97); }
 .btn-plan-basico   { background: var(--blue-light); color: var(--blue); }
 .btn-plan-estandar { background: var(--gold); color: #fff; }
 .btn-plan-premium  { background: var(--green); color: #fff; }
@@ -587,6 +527,11 @@ select {
 .msg {
   padding: 10px 14px; border-radius: 14px;
   max-width: 80%; font-size: 13.5px; line-height: 1.5;
+  animation: msgIn .2s ease both;
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(6px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .msg.user { background: var(--green); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
 .msg.ai   { background: var(--surface); color: var(--text); align-self: flex-start; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
@@ -601,7 +546,7 @@ select {
 }
 
 /* ═══════════════════════════════════════
-   CHIPS COMIDA / PAGO
+   CHIPS
 ═══════════════════════════════════════ */
 .chip-comida {
   padding: 7px 14px; border-radius: 99px;
@@ -609,6 +554,8 @@ select {
   font-size: 12.5px; font-weight: 600; cursor: pointer;
   transition: var(--trans); border: 1.5px solid var(--border);
 }
+.chip-comida:hover { border-color: var(--green); color: var(--green-dark); transform: scale(1.03); }
+.chip-comida:active { transform: scale(0.97); }
 .chip-comida.chip-activo { background: var(--green); color: #fff; border-color: var(--green); }
 
 .chip-pago {
@@ -618,6 +565,7 @@ select {
   flex: 1; text-align: center; transition: var(--trans);
   border: 1.5px solid var(--border);
 }
+.chip-pago:active { transform: scale(0.97); }
 .chip-pago.chip-pago-activo { background: var(--green); color: #fff; border-color: var(--green); }
 
 /* ═══════════════════════════════════════
@@ -638,19 +586,181 @@ select {
   border-radius: 50%;
   animation: spin .75s linear infinite;
 }
-.spinner-label {
-  font-size: 13.5px; font-weight: 600; color: var(--text2);
-}
+.spinner-label { font-size: 13.5px; font-weight: 600; color: var(--text2); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ═══════════════════════════════════════
-   NAV INFERIOR (obsoleta, reemplazada por sidebar)
-   Se mantiene solo como fallback
-═══════════════════════════════════════ */
 .nav { display: none; }
 
 /* ═══════════════════════════════════════
-   PANTALLA DE INICIO (LANDING)
+   TOAST SYSTEM — NUEVO
+═══════════════════════════════════════ */
+#toast-container {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 10000;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 30px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.06);
+  min-width: 260px; max-width: 340px;
+  pointer-events: all;
+  animation: toastIn .3s cubic-bezier(.22,1,.36,1) both;
+  position: relative; overflow: hidden;
+}
+.toast.toast-out { animation: toastOut .25s ease forwards; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(40px) scale(.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0) scale(1); max-height: 100px; margin-bottom: 0; }
+  to   { opacity: 0; transform: translateX(40px) scale(.95); max-height: 0; margin-bottom: -10px; }
+}
+.toast-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.toast-success .toast-icon { background: var(--green-light); }
+.toast-error   .toast-icon { background: var(--red-light); }
+.toast-info    .toast-icon { background: var(--blue-light); }
+.toast-warning .toast-icon { background: var(--gold-light); }
+.toast-body { flex: 1; }
+.toast-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.toast-msg   { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
+.toast-progress {
+  position: absolute; bottom: 0; left: 0;
+  height: 3px; border-radius: 0 0 var(--radius) var(--radius);
+  animation: toastProgress var(--duration, 3.5s) linear forwards;
+}
+.toast-success .toast-progress { background: var(--green); }
+.toast-error   .toast-progress { background: var(--red); }
+.toast-info    .toast-progress { background: var(--blue); }
+.toast-warning .toast-progress { background: var(--gold); }
+@keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+.toast-close {
+  width: 22px; height: 22px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text3); font-size: 14px;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.toast-close:hover { background: var(--surface2); color: var(--text); }
+
+/* ═══════════════════════════════════════
+   ONBOARDING — NUEVO
+═══════════════════════════════════════ */
+.onboarding-wrap {
+  max-width: 480px; margin: 0 auto;
+  padding: 28px 16px 80px;
+}
+.onboarding-steps {
+  display: flex; align-items: center; gap: 0;
+  margin-bottom: 32px;
+  padding: 0 4px;
+}
+.onboarding-step-item {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  flex: 1;
+  position: relative;
+}
+.onboarding-step-item:not(:last-child)::after {
+  content: '';
+  position: absolute; top: 16px; left: calc(50% + 16px);
+  right: calc(-50% + 16px);
+  height: 2px;
+  background: var(--border);
+  transition: background .4s ease;
+  z-index: 0;
+}
+.onboarding-step-item.done:not(:last-child)::after,
+.onboarding-step-item.active:not(:last-child)::after { background: var(--green); }
+.onboarding-step-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text3);
+  transition: all .3s cubic-bezier(.22,1,.36,1);
+  position: relative; z-index: 1;
+}
+.onboarding-step-item.active .onboarding-step-dot {
+  border-color: var(--green); background: var(--green); color: #fff;
+  box-shadow: 0 0 0 4px rgba(22,163,74,.15);
+  transform: scale(1.12);
+}
+.onboarding-step-item.done .onboarding-step-dot {
+  border-color: var(--green); background: var(--green-light); color: var(--green-dark);
+}
+.onboarding-step-label {
+  font-size: 10px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .5px;
+  text-align: center;
+}
+.onboarding-step-item.active .onboarding-step-label { color: var(--green-dark); }
+.onboarding-step-item.done  .onboarding-step-label { color: var(--green); }
+
+.onboarding-panel {
+  animation: panelSlide .32s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes panelSlide {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.onboarding-icon {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: var(--green-light);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+}
+.onboarding-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -.5px; margin-bottom: 6px; }
+.onboarding-sub   { font-size: 13.5px; color: var(--text2); margin-bottom: 24px; line-height: 1.55; }
+
+/* ═══════════════════════════════════════
+   MICRO ANIMACIONES — NUEVAS
+═══════════════════════════════════════ */
+/* Comida marcada: pulso verde */
+@keyframes markPulse {
+  0%  { box-shadow: 0 0 0 0 rgba(22,163,74,.5); }
+  50% { box-shadow: 0 0 0 10px rgba(22,163,74,0); }
+  100%{ box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+}
+.meal-marked { animation: markPulse .5s ease; }
+
+/* Reto completado: bounce */
+@keyframes retoBounce {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.06); }
+  65%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+.reto-done { animation: retoBounce .4s ease; }
+
+/* Badge de racha: wiggle */
+@keyframes rachaWiggle {
+  0%,100%{ transform: rotate(0deg); }
+  25%    { transform: rotate(-8deg); }
+  75%    { transform: rotate(8deg); }
+}
+.racha-up { animation: rachaWiggle .5s ease; }
+
+/* Fade slide para transiciones de pantalla */
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.screen-in { animation: screenIn .25s ease both; }
+
+/* ═══════════════════════════════════════
+   LANDING
 ═══════════════════════════════════════ */
 .landing-hero {
   min-height: calc(100vh - var(--header-h));
@@ -665,6 +775,7 @@ select {
   font-size: 11.5px; font-weight: 700; letter-spacing: .5px;
   text-transform: uppercase; margin-bottom: 22px;
   border: 1px solid var(--green-muted);
+  animation: cardIn .4s ease both;
 }
 .landing-title {
   font-family: 'Sora', sans-serif;
@@ -672,91 +783,63 @@ select {
   font-weight: 800; color: var(--text);
   letter-spacing: -1.5px; line-height: 1.1;
   margin-bottom: 16px;
+  animation: cardIn .4s .08s ease both;
 }
 .landing-title span { color: var(--green); }
 .landing-subtitle {
   font-size: 15.5px; color: var(--text2);
   max-width: 440px; line-height: 1.65;
   margin-bottom: 36px;
+  animation: cardIn .4s .14s ease both;
 }
-.landing-cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.landing-cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; animation: cardIn .4s .2s ease both; }
 
 .landing-stats {
   display: flex; gap: 40px; justify-content: center;
   flex-wrap: wrap; margin-top: 56px;
   padding-top: 36px; border-top: 1px solid var(--border);
   width: 100%; max-width: 480px;
+  animation: cardIn .4s .28s ease both;
 }
-.stat-val {
-  font-family: 'Sora', sans-serif;
-  font-size: 30px; font-weight: 800; color: var(--text);
-  letter-spacing: -1px;
-}
+.stat-val { font-family: 'Sora', sans-serif; font-size: 30px; font-weight: 800; color: var(--text); letter-spacing: -1px; }
 .stat-lbl { font-size: 11.5px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
 
-/* Tarjetas de rol */
-.role-cards {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 16px; max-width: 560px; margin: 0 auto 0;
-  padding: 0 0 32px; width: 100%;
-}
+.role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 560px; margin: 0 auto 0; padding: 0 0 32px; width: 100%; animation: cardIn .4s .18s ease both; }
 .role-card {
   background: var(--surface); border: 1.5px solid var(--border);
   border-radius: var(--radius-xl); padding: 24px 20px;
   cursor: pointer; text-align: left; transition: var(--trans);
 }
-.role-card:hover { border-color: var(--green); box-shadow: var(--shadow); transform: translateY(-2px); }
-.role-icon {
-  width: 44px; height: 44px; border-radius: var(--radius);
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 14px;
-}
+.role-card:hover { border-color: var(--green); box-shadow: var(--shadow); transform: translateY(-3px); }
+.role-card:active { transform: translateY(-1px) scale(0.99); }
+.role-icon { width: 44px; height: 44px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
 .role-icon.green { background: var(--green-light); }
 .role-icon.gold  { background: var(--gold-light); }
-.role-title {
-  font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700;
-  color: var(--text); margin-bottom: 6px;
-}
+.role-title { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 .role-desc { font-size: 12.5px; color: var(--text2); line-height: 1.5; margin-bottom: 16px; }
 .role-link { font-size: 12.5px; font-weight: 600; color: var(--green); display: flex; align-items: center; gap: 3px; }
 
 /* ═══════════════════════════════════════
    AUTH SCREENS
 ═══════════════════════════════════════ */
-.auth-wrap {
-  max-width: 390px; margin: 0 auto;
-  padding: 32px 16px 80px;
-}
+.auth-wrap { max-width: 390px; margin: 0 auto; padding: 32px 16px 80px; animation: screenIn .25s ease both; }
 .auth-back {
   display: flex; align-items: center; gap: 6px;
   font-size: 13px; font-weight: 600; color: var(--text2);
   background: none; border: none; cursor: pointer;
   margin-bottom: 28px; padding: 0;
   font-family: 'Inter', sans-serif;
-  transition: color .15s;
+  transition: color .15s, transform .15s;
 }
-.auth-back:hover { color: var(--text); }
-.auth-title {
-  font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800;
-  color: var(--text); letter-spacing: -.5px; margin-bottom: 6px;
-}
+.auth-back:hover { color: var(--text); transform: translateX(-2px); }
+.auth-title { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800; color: var(--text); letter-spacing: -.5px; margin-bottom: 6px; }
 .auth-sub { font-size: 13.5px; color: var(--text2); margin-bottom: 28px; }
-.auth-divider {
-  display: flex; align-items: center; gap: 10px;
-  margin: 20px 0; color: var(--text3); font-size: 12px;
-}
-.auth-divider::before, .auth-divider::after {
-  content: ''; flex: 1; height: 1px; background: var(--border);
-}
+.auth-divider { display: flex; align-items: center; gap: 10px; margin: 20px 0; color: var(--text3); font-size: 12px; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .auth-footer { text-align: center; font-size: 13px; color: var(--text2); margin-top: 18px; }
-.auth-footer a, .auth-link {
-  color: var(--green); font-weight: 600; cursor: pointer; text-decoration: none;
-}
-.forgot-link {
-  font-size: 12.5px; font-weight: 600; color: var(--green);
-  cursor: pointer; text-align: right; display: block;
-  margin: -6px 0 18px;
-}
+.auth-footer a, .auth-link { color: var(--green); font-weight: 600; cursor: pointer; text-decoration: none; }
+.forgot-link { font-size: 12.5px; font-weight: 600; color: var(--green); cursor: pointer; text-align: right; display: block; margin: -6px 0 18px; transition: opacity .15s; }
+.forgot-link:hover { opacity: .75; }
 
 /* ═══════════════════════════════════════
    MODAL CONFIRMACION
@@ -766,40 +849,30 @@ select {
   background: rgba(15,23,42,.5);
   display: flex; align-items: center; justify-content: center;
   z-index: 9999; padding: 20px;
+  animation: fadeIn .2s ease;
 }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .modal-box {
   background: var(--surface); border-radius: var(--radius-xl);
   padding: 28px 24px; max-width: 340px; width: 100%;
   text-align: center; box-shadow: var(--shadow-lg);
   border: 1px solid var(--border);
+  animation: cardIn .25s cubic-bezier(.22,1,.36,1);
 }
 .modal-icon { font-size: 38px; margin-bottom: 10px; }
-.modal-msg {
-  white-space: pre-line; font-size: 14px;
-  color: var(--text2); line-height: 1.65; margin-bottom: 20px;
-}
+.modal-msg { white-space: pre-line; font-size: 14px; color: var(--text2); line-height: 1.65; margin-bottom: 20px; }
 
 /* ═══════════════════════════════════════
    BADGES / TAGS
 ═══════════════════════════════════════ */
-.badge {
-  display: inline-flex; align-items: center;
-  padding: 2px 9px; border-radius: 99px;
-  font-size: 11px; font-weight: 700; letter-spacing: .4px;
-}
+.badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; letter-spacing: .4px; }
 .badge-green  { background: var(--green-light);  color: var(--green-dark); }
 .badge-gold   { background: var(--gold-light);   color: var(--gold); }
 .badge-blue   { background: var(--blue-light);   color: var(--blue); }
 .badge-red    { background: var(--red-light);    color: var(--red); }
 .badge-muted  { background: var(--surface2);     color: var(--text2); }
 
-/* Live badge */
-.live-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 9px; border-radius: 99px;
-  background: var(--green-light); color: var(--green-dark);
-  font-size: 11px; font-weight: 700;
-}
+.live-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 99px; background: var(--green-light); color: var(--green-dark); font-size: 11px; font-weight: 700; }
 .live-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s ease infinite; }
 
 /* ═══════════════════════════════════════
@@ -811,19 +884,9 @@ select {
   color: #fff; margin-bottom: 20px;
   position: relative; overflow: hidden; height: 140px;
 }
-.pago-card-visual::before {
-  content: ''; position: absolute; top: -40px; right: -40px;
-  width: 180px; height: 180px; border-radius: 50%;
-  background: rgba(255,255,255,.07);
-}
-.pago-card-num {
-  font-family: 'Sora', sans-serif; font-size: 20px;
-  letter-spacing: 3px; margin-top: 22px; opacity: .9;
-}
-.pago-card-hint {
-  position: absolute; bottom: 20px; left: 22px;
-  font-size: 10px; opacity: .65; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-}
+.pago-card-visual::before { content: ''; position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.07); }
+.pago-card-num { font-family: 'Sora', sans-serif; font-size: 20px; letter-spacing: 3px; margin-top: 22px; opacity: .9; }
+.pago-card-hint { position: absolute; bottom: 20px; left: 22px; font-size: 10px; opacity: .65; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
 
 /* ═══════════════════════════════════════
    MODO OSCURO
@@ -840,7 +903,6 @@ body.dark .card { background: var(--surface); }
 body.dark .chat-box { background: var(--surface2); }
 body.dark .input-field, body.dark input, body.dark select { background: var(--surface2); color: var(--text); border-color: var(--border2); }
 body.dark .plan-card { background: var(--surface); }
-/* Dark mode sidebar overrides */
 body.dark #sidebar { background: linear-gradient(180deg, #1e293b 0%, #172032 100%); border-right-color: #2d3f5f; }
 body.dark .sb-profile::before { background: radial-gradient(circle, rgba(22,163,74,.08) 0%, transparent 70%); }
 body.dark .sb-item:hover { background: rgba(30,41,59,.9); border-color: #2d3f5f; }
@@ -849,6 +911,8 @@ body.dark .sb-item .sb-icon-wrap { background: #243252; }
 body.dark .sb-item:hover .sb-icon-wrap { background: #2d3f5f; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
 body.dark .sb-cta-btn { box-shadow: 0 4px 14px rgba(22,163,74,.2), inset 0 1px 0 rgba(255,255,255,.1); }
 body.dark .sb-avatar::after { border-color: #1e293b; }
+body.dark .toast { background: var(--surface); border-color: var(--border2); }
+body.dark .onboarding-step-dot { background: var(--surface2); }
 
 /* ═══════════════════════════════════════
    RESPONSIVE
@@ -859,50 +923,41 @@ body.dark .sb-avatar::after { border-color: #1e293b; }
   .input-row  { grid-template-columns: 1fr; }
   .planes-grid { grid-template-columns: 1fr; }
   .landing-hero { padding: 32px 16px 60px; }
+  #toast-container { bottom: 16px; right: 16px; left: 16px; }
+  .toast { min-width: unset; }
+  .onboarding-step-label { display: none; }
 }
 
 /* ═══════════════════════════════════════
-   TABS DE NAVEGACIÓN INTERNA
+   TABS
 ═══════════════════════════════════════ */
 .nt-tabs {
-  display: flex;
-  gap: 4px;
+  display: flex; gap: 4px;
   background: var(--surface2);
-  border-radius: var(--radius);
-  padding: 4px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 4px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; border: 1px solid var(--border);
 }
 .nt-tabs::-webkit-scrollbar { display: none; }
 .nt-tab {
-  display: flex;
-  align-items: center;
-  gap: 7px;
+  display: flex; align-items: center; gap: 7px;
   padding: 9px 16px;
   border-radius: calc(var(--radius) - 4px);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text2);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  transition: var(--trans);
-  white-space: nowrap;
-  flex-shrink: 0;
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  background: transparent; border: none; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: var(--trans);
+  white-space: nowrap; flex-shrink: 0;
 }
 .nt-tab svg { width: 15px; height: 15px; }
-.nt-tab:hover { color: var(--text); background: rgba(255,255,255,.6); }
-.nt-tab.active {
-  background: var(--surface);
-  color: var(--green-dark);
-  box-shadow: var(--shadow-sm);
-}
+.nt-tab:hover { color: var(--text); background: rgba(255,255,255,.6); transform: scale(1.02); }
+.nt-tab:active { transform: scale(0.98); }
+.nt-tab.active { background: var(--surface); color: var(--green-dark); box-shadow: var(--shadow-sm); }
 </style>
 </head>
 <body>
+
+<!-- ═══════ TOAST CONTAINER ═══════ -->
+<div id="toast-container"></div>
 
 <!-- ═══════ TOPBAR ═══════ -->
 <header id="topbar">
@@ -932,28 +987,21 @@ body.dark .sb-avatar::after { border-color: #1e293b; }
   </div>
 </header>
 
-<!-- ═══════ SIDEBAR OVERLAY ═══════ -->
 <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+<nav id="sidebar"></nav>
 
-<!-- ═══════ SIDEBAR ═══════ -->
-<nav id="sidebar">
-  <!-- Se llena dinámicamente con buildSidebar() -->
-</nav>
-
-<!-- ═══════ LOADER GLOBAL ═══════ -->
 <div class="loading-overlay" id="loader-global" style="display:flex">
   <div class="spinner"></div>
   <span class="spinner-label">Iniciando NutriTrack Pro...</span>
 </div>
 
-<!-- ═══════ CONTENIDO ═══════ -->
 <div id="main-wrap">
   <div class="container" id="app"></div>
 </div>
 
 <script>
 /* ═══════════════════════════════════════
-   ESTADO GLOBAL (igual que original)
+   ESTADO GLOBAL
 ═══════════════════════════════════════ */
 let pacienteActual = null
 let nutriActual    = null
@@ -961,6 +1009,36 @@ let planSeleccionado = null
 let _unsubscribePaciente = null
 let _unsubscribeNutri    = null
 let chatHistory = []
+
+/* ═══════════════════════════════════════
+   TOAST SYSTEM — NUEVO
+═══════════════════════════════════════ */
+function toast(tipo, titulo, msg, duracion=3500) {
+  const container = document.getElementById('toast-container')
+  const icons = {
+    success: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`,
+    error:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    info:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    warning: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+  }
+  const t = document.createElement('div')
+  t.className = `toast toast-${tipo}`
+  t.style.setProperty('--duration', duracion + 'ms')
+  t.innerHTML = `
+    <div class="toast-icon">${icons[tipo]||icons.info}</div>
+    <div class="toast-body">
+      <div class="toast-title">${titulo}</div>
+      ${msg ? `<div class="toast-msg">${msg}</div>` : ''}
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+    <div class="toast-progress"></div>
+  `
+  container.appendChild(t)
+  setTimeout(() => {
+    t.classList.add('toast-out')
+    setTimeout(() => t.remove(), 280)
+  }, duracion)
+}
 
 /* ═══════════════════════════════════════
    SIDEBAR — LÓGICA
@@ -999,7 +1077,9 @@ const ICONS = {
 }
 function icon(name) { return ICONS[name] || '' }
 
-/* Construir sidebar para NUTRICIONISTA */
+/* ═══════════════════════════════════════
+   SIDEBAR NUTRICIONISTA
+═══════════════════════════════════════ */
 function buildSidebarNutri(activeSection) {
   const plan = nutriActual?.plan || 'basico'
   const planLabel = { basico:'Básico', estandar:'Estándar', premium:'Premium' }[plan] || plan
@@ -1015,7 +1095,6 @@ function buildSidebarNutri(activeSection) {
       <span class="sb-label">${label}</span>${badge}${newDot}
     </button>`
   }
-
   document.getElementById('sidebar').innerHTML = `
     <div class="sb-profile">
       <div class="sb-profile-inner">
@@ -1027,24 +1106,20 @@ function buildSidebarNutri(activeSection) {
         </div>
       </div>
     </div>
-
     <div class="sb-section">
       <div class="sb-section-label">Principal</div>
       ${sbItem('dashboard', 'dashboard()', 'chart', 'Dashboard')}
       ${sbItem('pacientes', 'dashboard()', 'users', 'Mis pacientes')}
     </div>
-
     <div class="sb-section">
       <div class="sb-section-label">Herramientas</div>
       ${sbItem('', 'closeSidebar()', 'clipboard', 'Dietas semanales', {isNew:true})}
       ${sbItem('', 'closeSidebar()', 'bell', 'Notificaciones', {badge:'3'})}
     </div>
-
     <div class="sb-section">
       <div class="sb-section-label">Reportes</div>
       ${sbItem('ranking', 'ranking()', 'trophy', 'Ranking global')}
     </div>
-
     <div class="sb-section">
       <div class="sb-section-label">Cuenta</div>
       <button class="sb-cta-btn" onclick="verPrecios();closeSidebar()">
@@ -1054,16 +1129,15 @@ function buildSidebarNutri(activeSection) {
       ${sbItem('', 'cerrarSesion()', 'logout', 'Cerrar sesión', {})}
     </div>
   `
-  document.getElementById('sidebar').querySelector('.sb-item.danger') && null
-  // Marcar cerrar sesión como danger manualmente
   const allItems = document.getElementById('sidebar').querySelectorAll('.sb-item')
   allItems[allItems.length-1].classList.add('danger')
-
   document.getElementById('btn-hamburger').style.display = 'flex'
   document.getElementById('sync-badge').style.display = 'flex'
 }
 
-/* Construir sidebar para PACIENTE */
+/* ═══════════════════════════════════════
+   SIDEBAR PACIENTE
+═══════════════════════════════════════ */
 function buildSidebarPaciente(activeSection) {
   const plan = pacienteActual?.plan || 'basico'
   const planLabel = { basico:'Básico', estandar:'Estándar', premium:'Premium' }[plan] || plan
@@ -1072,7 +1146,6 @@ function buildSidebarPaciente(activeSection) {
   const initial = (pacienteActual?.nombre || 'P')[0].toUpperCase()
   const hasAI = ['estandar','premium'].includes(plan)
   const racha = pacienteActual?.racha || 0
-
   const sbItem = (section, fn, iconName, label, opts={}) => {
     const isActive = activeSection === section
     const badge = opts.badge ? `<span class="sb-badge">${opts.badge}</span>` : ''
@@ -1082,7 +1155,6 @@ function buildSidebarPaciente(activeSection) {
       <span class="sb-label">${label}</span>${badge}${newDot}
     </button>`
   }
-
   document.getElementById('sidebar').innerHTML = `
     <div class="sb-profile">
       <div class="sb-profile-inner">
@@ -1094,13 +1166,11 @@ function buildSidebarPaciente(activeSection) {
         </div>
       </div>
     </div>
-
     <div class="sb-section">
       <div class="sb-section-label">Mi día</div>
       ${sbItem('home', 'panelPaciente()', 'home', 'Inicio')}
       ${sbItem('comidas', 'panelPaciente()', 'food', 'Mis comidas')}
     </div>
-
     <div class="sb-section">
       <div class="sb-section-label">Progreso</div>
       ${sbItem('retos', 'paginaRetos()', 'fire', 'Retos', {badge: pacienteActual?.retos?.filter(r=>!r.completado).length || ''})}
@@ -1110,7 +1180,6 @@ function buildSidebarPaciente(activeSection) {
       ${sbItem('chat', 'chatNutriAI()', 'ai', 'Chat Nutricionista')}
       ` : ''}
     </div>
-
     <div class="sb-section">
       <div class="sb-section-label">Cuenta</div>
       ${!hasAI ? `
@@ -1132,7 +1201,6 @@ function buildSidebarPaciente(activeSection) {
   document.getElementById('sync-badge').style.display = 'flex'
 }
 
-/* Limpiar sidebar (pantalla de inicio/login) */
 function clearSidebar() {
   document.getElementById('sidebar').innerHTML = ''
   document.getElementById('btn-hamburger').style.display = 'none'
@@ -1140,17 +1208,17 @@ function clearSidebar() {
   closeSidebar()
 }
 
-/* Cerrar sesión genérico */
 function cerrarSesion() {
   limpiarListeners()
   pacienteActual = null
   nutriActual = null
   clearSidebar()
+  toast('info', 'Sesión cerrada', 'Hasta pronto 👋')
   inicio()
 }
 
 /* ═══════════════════════════════════════
-   FIREBASE & UTILS (igual que original)
+   FIREBASE & UTILS
 ═══════════════════════════════════════ */
 function esperarDB() {
   return new Promise(resolve => {
@@ -1205,7 +1273,7 @@ function barraRacha() {
   let html = '<div style="display:flex;gap:5px;margin-top:4px">'
   for (let i = 1; i <= 7; i++) {
     html += i <= pacienteActual.racha
-      ? `<div style="width:26px;height:26px;border-radius:6px;background:var(--green);display:flex;align-items:center;justify-content:center;">${icon('fire').replace('currentColor','white')}</div>`
+      ? `<div style="width:26px;height:26px;border-radius:6px;background:var(--green);display:flex;align-items:center;justify-content:center;transition:transform .2s ease" onmouseenter="this.style.transform='scale(1.15)'" onmouseleave="this.style.transform='scale(1)'">${icon('fire').replace('currentColor','white')}</div>`
       : `<div style="width:26px;height:26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border)"></div>`
   }
   return html + '</div>'
@@ -1227,8 +1295,9 @@ const PLANES = {
 
 function renderPlanes(modo, origen) {
   return `<div class="planes-grid">
-    ${Object.entries(PLANES).map(([key,p]) => `
+    ${Object.entries(PLANES).map(([key,p], idx) => `
     <div class="plan-card ${planSeleccionado==key?'selected':''}" id="plancard-${key}"
+         style="animation-delay:${idx*0.06}s"
          onclick="elegirPlan('${key}','${modo}','${origen}')">
       <div class="check-selected">${icon('check')}</div>
       <div class="plan-tag">Primer mes GRATIS</div>
@@ -1264,9 +1333,7 @@ function verPrecios() {
   planSeleccionado = null
   app.innerHTML = `
   <div class="card">
-    <button class="btn btn-ghost" onclick="inicio()" style="margin-bottom:16px">
-      ${icon('back')} Volver
-    </button>
+    <button class="btn btn-ghost" onclick="inicio()" style="margin-bottom:16px">${icon('back')} Volver</button>
     <div class="card-header">
       <div>
         <div class="card-title">Planes y precios</div>
@@ -1278,12 +1345,11 @@ function verPrecios() {
 }
 
 /* ═══════════════════════════════════════
-   INICIO — pantalla de bienvenida
+   INICIO
 ═══════════════════════════════════════ */
 function inicio() {
   limpiarListeners()
   clearSidebar()
-
   app.innerHTML = `
   <div class="landing-hero">
     <div class="landing-eyebrow">
@@ -1342,84 +1408,171 @@ function loginNutri() {
     <button class="auth-back" onclick="inicio()">${icon('back')} Volver</button>
     <h2 class="auth-title">Bienvenido de vuelta</h2>
     <p class="auth-sub">Inicia sesión en tu cuenta de nutricionista</p>
-
     <div class="input-group">
       <label class="input-label">Usuario</label>
       <input id="userNutri" placeholder="Tu nombre de usuario" type="text">
     </div>
     <div class="input-group">
       <label class="input-label">Contraseña</label>
-      <input id="passNutri" type="password" placeholder="••••••••">
+      <input id="passNutri" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')entrarNutri()">
     </div>
     <span class="forgot-link" onclick="olvidePass('nutricionista')">¿Olvidaste tu contraseña?</span>
-
-    <button class="btn btn-primary btn-full btn-lg" onclick="entrarNutri()">
-      Iniciar sesión
-    </button>
-
+    <button class="btn btn-primary btn-full btn-lg" onclick="entrarNutri()">Iniciar sesión</button>
     <div class="auth-divider">o</div>
     <div class="auth-footer">
       ¿No tienes cuenta?
-      <span class="auth-link" onclick="registroNutri()">Regístrate aquí</span>
+      <span class="auth-link" onclick="onboardingNutri()">Regístrate aquí</span>
     </div>
   </div>`
 }
 
-function registroNutri() {
-  app.innerHTML = `
-  <div class="auth-wrap">
-    <button class="auth-back" onclick="loginNutri()">${icon('back')} Volver al login</button>
-    <h2 class="auth-title">Crear cuenta</h2>
-    <p class="auth-sub">Regístrate como nutricionista profesional</p>
+/* ═══════════════════════════════════════
+   ONBOARDING NUTRICIONISTA — NUEVO (3 pasos)
+═══════════════════════════════════════ */
+let _onbData = {}
 
+function onboardingNutri() {
+  _onbData = {}
+  renderOnboarding(1)
+}
+
+function renderOnboarding(paso) {
+  const pasos = [
+    { label: 'Tu cuenta' },
+    { label: 'Tu perfil' },
+    { label: 'Tu plan' }
+  ]
+  const stepsHtml = pasos.map((p, i) => {
+    const num = i + 1
+    const state = num < paso ? 'done' : num === paso ? 'active' : ''
+    const dotContent = num < paso
+      ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green-dark)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`
+      : num
+    return `<div class="onboarding-step-item ${state}">
+      <div class="onboarding-step-dot">${dotContent}</div>
+      <div class="onboarding-step-label">${p.label}</div>
+    </div>`
+  }).join('')
+
+  let panelHtml = ''
+
+  if (paso === 1) {
+    panelHtml = `
+    <div class="onboarding-icon">${icon('users')}</div>
+    <div class="onboarding-title">Crea tu cuenta</div>
+    <p class="onboarding-sub">Solo te tomará 2 minutos. Elige un usuario y una contraseña segura.</p>
     <div class="input-group">
       <label class="input-label">Usuario</label>
-      <input id="nuevoUserNutri" placeholder="Elige un nombre de usuario" type="text">
+      <input id="onb-user" placeholder="Ej: dr.garcia" type="text" value="${_onbData.user||''}">
     </div>
     <div class="input-group">
       <label class="input-label">Contraseña</label>
-      <input id="nuevoPassNutri" type="password" placeholder="Mínimo 6 caracteres">
+      <input id="onb-pass" type="password" placeholder="Mínimo 6 caracteres" value="${_onbData.pass||''}" onkeydown="if(event.key==='Enter')onbNext(1)">
     </div>
+    <button class="btn btn-primary btn-full btn-lg" onclick="onbNext(1)" style="margin-top:8px">Siguiente →</button>
+    <div class="auth-footer" style="margin-top:14px">¿Ya tienes cuenta? <span class="auth-link" onclick="loginNutri()">Inicia sesión</span></div>`
 
-    <button class="btn btn-primary btn-full btn-lg" onclick="registrarNutri()">
-      Crear cuenta
-    </button>
-
-    <div class="auth-divider">o</div>
-    <div class="auth-footer">
-      ¿Ya tienes cuenta?
-      <span class="auth-link" onclick="loginNutri()">Inicia sesión</span>
+  } else if (paso === 2) {
+    panelHtml = `
+    <div class="onboarding-icon">${icon('person')}</div>
+    <div class="onboarding-title">Tu perfil profesional</div>
+    <p class="onboarding-sub">Cuéntanos sobre tu práctica. Esta información aparece en tu dashboard.</p>
+    <div class="input-group">
+      <label class="input-label">Nombre completo</label>
+      <input id="onb-nombre" placeholder="Dr. Juan García" type="text" value="${_onbData.nombre||''}">
     </div>
+    <div class="input-group">
+      <label class="input-label">Especialidad</label>
+      <input id="onb-especialidad" placeholder="Ej: Nutrición clínica, deportiva..." value="${_onbData.especialidad||''}">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-secondary" onclick="renderOnboarding(1)" style="flex:1">${icon('back')} Atrás</button>
+      <button class="btn btn-primary" onclick="onbNext(2)" style="flex:2">Siguiente →</button>
+    </div>`
+
+  } else if (paso === 3) {
+    planSeleccionado = null
+    panelHtml = `
+    <div class="onboarding-icon">${icon('star')}</div>
+    <div class="onboarding-title">Elige tu plan</div>
+    <p class="onboarding-sub">Tu primer mes es completamente gratis. Cancela cuando quieras.</p>
+    <div id="seccion-planes">${renderPlanes('onboarding','registro')}</div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-secondary" onclick="renderOnboarding(2)" style="flex:1">${icon('back')} Atrás</button>
+      <button class="btn btn-primary" onclick="onbFinalizar()" style="flex:2">Crear cuenta</button>
+    </div>`
+  }
+
+  app.innerHTML = `
+  <div class="onboarding-wrap">
+    <button class="auth-back" onclick="inicio()" style="margin-bottom:20px">${icon('back')} Volver al inicio</button>
+    <div class="onboarding-steps">${stepsHtml}</div>
+    <div class="onboarding-panel">${panelHtml}</div>
   </div>`
 }
 
-async function registrarNutri() {
-  let u = document.getElementById('nuevoUserNutri').value.trim()
-  let p = document.getElementById('nuevoPassNutri').value
-  if (!u || !p) { alert('Completa todos los campos'); return }
-  mostrarLoader('Verificando usuario...')
-  const existe = await window._db.getNutri(u)
-  if (existe) { ocultarLoader(); alert('Este usuario ya existe'); return }
-  ocultarLoader()
-  window._tempNutri = { user: u, pass: p }
-  pantallaPlanYPago('nutricionista', 'registro')
+async function onbNext(paso) {
+  if (paso === 1) {
+    const u = document.getElementById('onb-user').value.trim()
+    const p = document.getElementById('onb-pass').value
+    if (!u || p.length < 6) { toast('warning','Datos incompletos','Ingresa usuario y contraseña (mín. 6 caracteres)'); return }
+    mostrarLoader('Verificando usuario...')
+    const existe = await window._db.getNutri(u)
+    ocultarLoader()
+    if (existe) { toast('error','Usuario ocupado','Ese usuario ya existe, elige otro'); return }
+    _onbData.user = u; _onbData.pass = p
+    renderOnboarding(2)
+  } else if (paso === 2) {
+    const nombre = document.getElementById('onb-nombre').value.trim()
+    const espec  = document.getElementById('onb-especialidad').value.trim()
+    if (!nombre) { toast('warning','Falta tu nombre','Por favor ingresa tu nombre completo'); return }
+    _onbData.nombre = nombre; _onbData.especialidad = espec
+    renderOnboarding(3)
+  }
 }
+
+async function onbFinalizar() {
+  if (!planSeleccionado) { toast('warning','Elige un plan','Selecciona un plan para continuar'); return }
+  mostrarLoader('Creando tu cuenta...')
+  try {
+    const nutri = {
+      user: _onbData.user,
+      pass: _onbData.pass,
+      nombre: _onbData.nombre,
+      especialidad: _onbData.especialidad || '',
+      plan: planSeleccionado,
+      fechaRegistro: new Date().toDateString()
+    }
+    await window._db.guardarNutri(nutri)
+    ocultarLoader()
+    toast('success', '¡Cuenta creada!', 'Bienvenido a NutriTrack Pro 🎉', 4500)
+    setTimeout(() => { nutriActual = nutri; dashboard() }, 1200)
+  } catch(err) {
+    ocultarLoader()
+    toast('error','Error al guardar','Revisa tu conexión e inténtalo de nuevo')
+  }
+}
+
+/* Registro antiguo — ahora redirige al onboarding */
+function registroNutri() { onboardingNutri() }
+async function registrarNutri() { onboardingNutri() }
 
 async function entrarNutri() {
   let u = document.getElementById('userNutri').value.trim()
   let p = document.getElementById('passNutri').value
-  if (!u || !p) { alert('Completa todos los campos'); return }
+  if (!u || !p) { toast('warning','Campos vacíos','Completa usuario y contraseña'); return }
   if (!window._dbReady) { mostrarLoader('Conectando con Firebase...'); await esperarDB() }
   mostrarLoader('Verificando credenciales...')
   try {
     const nutri = await window._db.getNutri(u)
     ocultarLoader()
-    if (!nutri || nutri.pass !== p) { alert('Credenciales incorrectas'); return }
+    if (!nutri || nutri.pass !== p) { toast('error','Credenciales incorrectas','Verifica tu usuario y contraseña'); return }
     nutriActual = nutri
-    dashboard()
+    toast('success','¡Bienvenido!',`Hola de nuevo, ${u} 👋`)
+    setTimeout(() => dashboard(), 600)
   } catch(err) {
     ocultarLoader()
-    alert('Error de conexión. Revisa tu internet e inténtalo de nuevo.')
+    toast('error','Error de conexión','Revisa tu internet e inténtalo de nuevo')
   }
 }
 
@@ -1434,20 +1587,16 @@ function loginPaciente() {
     <button class="auth-back" onclick="inicio()">${icon('back')} Volver</button>
     <h2 class="auth-title">Acceso de paciente</h2>
     <p class="auth-sub">Ingresa con las credenciales que te dio tu nutricionista</p>
-
     <div class="input-group">
       <label class="input-label">Usuario</label>
       <input id="userPaciente" placeholder="Tu nombre de usuario" type="text">
     </div>
     <div class="input-group">
       <label class="input-label">Contraseña</label>
-      <input id="passPaciente" type="password" placeholder="••••••••">
+      <input id="passPaciente" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')entrarPaciente()">
     </div>
     <span class="forgot-link" onclick="olvidePass('paciente')">¿Olvidaste tu contraseña?</span>
-
-    <button class="btn btn-primary btn-full btn-lg" onclick="entrarPaciente()">
-      Ingresar
-    </button>
+    <button class="btn btn-primary btn-full btn-lg" onclick="entrarPaciente()">Ingresar</button>
   </div>`
 }
 
@@ -1457,7 +1606,6 @@ function olvidePass(tipo) {
     <button class="auth-back" onclick="inicio()">${icon('back')} Volver</button>
     <h2 class="auth-title">Recuperar contraseña</h2>
     <p class="auth-sub">Ingresa tu usuario y define una nueva contraseña</p>
-
     <div class="input-group">
       <label class="input-label">Usuario</label>
       <input id="userRecuperar" placeholder="Tu usuario" type="text">
@@ -1466,41 +1614,41 @@ function olvidePass(tipo) {
       <label class="input-label">Nueva contraseña</label>
       <input id="nuevaPass" type="password" placeholder="Nueva contraseña">
     </div>
-    <button class="btn btn-primary btn-full btn-lg" onclick="cambiarPassword('${tipo}')">
-      Actualizar contraseña
-    </button>
+    <button class="btn btn-primary btn-full btn-lg" onclick="cambiarPassword('${tipo}')">Actualizar contraseña</button>
   </div>`
 }
 
 async function cambiarPassword(tipo) {
   let user = document.getElementById('userRecuperar').value.trim()
   let nueva = document.getElementById('nuevaPass').value
-  if (!user || !nueva) { alert('Completa todos los campos'); return }
+  if (!user || !nueva) { toast('warning','Campos vacíos','Completa todos los campos'); return }
   mostrarLoader('Actualizando...')
   if (tipo == 'paciente') {
     let p = await window._db.getPaciente(user)
-    if (!p) { ocultarLoader(); alert('Usuario no encontrado'); return }
+    if (!p) { ocultarLoader(); toast('error','Usuario no encontrado','Verifica el nombre de usuario'); return }
     p.password = nueva; await window._db.guardarPaciente(p)
   } else {
     let n = await window._db.getNutri(user)
-    if (!n) { ocultarLoader(); alert('Usuario no encontrado'); return }
+    if (!n) { ocultarLoader(); toast('error','Usuario no encontrado','Verifica el nombre de usuario'); return }
     n.pass = nueva; await window._db.guardarNutri(n)
   }
   ocultarLoader()
-  alert('Contraseña actualizada correctamente')
-  if (tipo == 'paciente') loginPaciente(); else loginNutri()
+  toast('success','Contraseña actualizada','Ya puedes iniciar sesión con tu nueva contraseña')
+  setTimeout(() => { if (tipo == 'paciente') loginPaciente(); else loginNutri() }, 1200)
 }
 
 async function entrarPaciente() {
   let u = document.getElementById('userPaciente').value.trim()
   let p = document.getElementById('passPaciente').value
+  if (!u || !p) { toast('warning','Campos vacíos','Ingresa tu usuario y contraseña'); return }
   if (!window._dbReady) { mostrarLoader('Conectando con Firebase...'); await esperarDB() }
   mostrarLoader('Verificando...')
   const pac = await window._db.getPaciente(u)
   ocultarLoader()
-  if (!pac || pac.password !== p) { alert('Credenciales incorrectas'); return }
+  if (!pac || pac.password !== p) { toast('error','Credenciales incorrectas','Verifica tu usuario y contraseña'); return }
   pacienteActual = pac
-  panelPaciente()
+  toast('success','¡Hola!',`Bienvenido, ${pac.nombre} 👋`)
+  setTimeout(() => panelPaciente(), 600)
 }
 
 /* ═══════════════════════════════════════
@@ -1516,7 +1664,7 @@ async function dashboard() {
     buildSidebarNutri('dashboard')
     renderDashboardCompleto(misPacientes)
   } catch(err) {
-    ocultarLoader(); alert('Error al cargar el dashboard. Revisa tu conexión.'); return
+    ocultarLoader(); toast('error','Error al cargar','Revisa tu conexión e inténtalo de nuevo'); return
   }
   _unsubscribeNutri = window._db.escucharPacientesNutri(nutriActual.user, (pacientes) => {
     renderDashboardCompleto(pacientes)
@@ -1525,12 +1673,10 @@ async function dashboard() {
 
 function renderDashboardCompleto(misPacientes) {
   const hasPremiun = nutriActual.plan === 'premium'
-  const total = misPacientes.length
-  const avg   = total ? Math.round(misPacientes.reduce((a,p)=>a+(p.progreso||0),0)/total) : 0
-  const racha = total ? Math.max(...misPacientes.map(p=>p.racha||0)) : 0
-  const activos = misPacientes.filter(p=>p.fecha===new Date().toDateString()).length
-
-  // Obtener tab activo o default
+  const total  = misPacientes.length
+  const avg    = total ? Math.round(misPacientes.reduce((a,p)=>a+(p.progreso||0),0)/total) : 0
+  const racha  = total ? Math.max(...misPacientes.map(p=>p.racha||0)) : 0
+  const activos= misPacientes.filter(p=>p.fecha===new Date().toDateString()).length
   const activeTab = window._nutriTab || 'pacientes'
 
   const tabBtn = (id, label, icon_name) => `
@@ -1539,7 +1685,7 @@ function renderDashboardCompleto(misPacientes) {
     </button>`
 
   const statCard = (val, label, color) => `
-    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 14px;text-align:center;flex:1;min-width:90px">
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 14px;text-align:center;flex:1;min-width:90px;transition:transform .2s ease" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='translateY(0)'">
       <div style="font-size:26px;font-weight:800;color:${color};letter-spacing:-1px">${val}</div>
       <div style="font-size:11px;color:var(--text3);font-weight:500;margin-top:3px;text-transform:uppercase;letter-spacing:.4px">${label}</div>
     </div>`
@@ -1554,13 +1700,13 @@ function renderDashboardCompleto(misPacientes) {
           <div style="font-size:13px">Registra tu primer paciente en la pestaña <b>Nuevo Paciente</b></div>
         </div>`
       : misPacientes.map(p => `
-        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);margin-bottom:10px;transition:all .2s ease" onmouseenter="this.style.borderColor='var(--green-muted)';this.style.transform='translateX(2px)'" onmouseleave="this.style.borderColor='var(--border)';this.style.transform='translateX(0)'">
           <div style="width:40px;height:40px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:var(--green-dark);flex-shrink:0">${(p.nombre||'?')[0].toUpperCase()}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:14px">${p.nombre}</div>
             <div style="font-size:11.5px;color:var(--text3);margin-top:2px">@${p.usuario} · <span class="badge badge-${p.plan=='premium'?'green':p.plan=='estandar'?'gold':'muted'}">${p.plan||'básico'}</span></div>
             <div style="margin-top:8px;background:var(--surface2);border-radius:99px;height:5px;overflow:hidden">
-              <div style="height:100%;background:var(--green);border-radius:99px;width:${p.fecha===new Date().toDateString()?p.progreso:0}%;transition:width .4s"></div>
+              <div style="height:100%;background:var(--green);border-radius:99px;width:${p.fecha===new Date().toDateString()?p.progreso:0}%;transition:width .7s cubic-bezier(.22,1,.36,1)"></div>
             </div>
             <div style="font-size:11px;color:var(--text3);margin-top:3px">${p.fecha===new Date().toDateString()?p.progreso+'% hoy':'Sin actividad hoy'}</div>
           </div>
@@ -1643,11 +1789,7 @@ function renderDashboardCompleto(misPacientes) {
   }
 }
 
-function switchNutriTab(tab) {
-  window._nutriTab = tab
-  dashboard()
-}
-
+function switchNutriTab(tab) { window._nutriTab = tab; dashboard() }
 
 async function crearPaciente() {
   let nombreVal  = document.getElementById('nombre').value
@@ -1657,10 +1799,10 @@ async function crearPaciente() {
   let pesoVal    = document.getElementById('peso').value
   let alturaVal  = document.getElementById('altura').value
   let objetivoVal= document.getElementById('objetivo').value
-  if (!nombreVal||!usuarioVal||!passVal) { alert('Nombre, usuario y contraseña son requeridos'); return }
+  if (!nombreVal||!usuarioVal||!passVal) { toast('warning','Campos requeridos','Nombre, usuario y contraseña son obligatorios'); return }
   mostrarLoader('Verificando usuario...')
   const existe = await window._db.getPaciente(usuarioVal)
-  if (existe) { ocultarLoader(); alert('Este usuario ya existe'); return }
+  if (existe) { ocultarLoader(); toast('error','Usuario ocupado','Ese usuario ya existe, elige otro'); return }
   ocultarLoader()
   window._tempPaciente = {
     nombre:nombreVal, usuario:usuarioVal, password:passVal, edad:edadVal,
@@ -1674,7 +1816,7 @@ async function crearPaciente() {
 }
 
 /* ═══════════════════════════════════════
-   DIETA SEMANAL (sin cambios)
+   DIETA SEMANAL
 ═══════════════════════════════════════ */
 async function crearDietaSemanal(usuario) {
   mostrarLoader('Cargando datos...')
@@ -1694,7 +1836,7 @@ function renderFormDieta(paciente, dias, diaActualIdx) {
       <div class="card-title">Dieta semanal — ${paciente.nombre}</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px">
-      ${dias.map((dia,i)=>`<span onclick="cambiarDia(${i})" style="padding:6px 13px;border-radius:99px;cursor:pointer;font-size:12.5px;font-weight:600;background:${i===diaActualIdx?'var(--green)':'var(--surface2)'};color:${i===diaActualIdx?'white':'var(--text2)'};border:1px solid ${i===diaActualIdx?'var(--green)':'var(--border)'};transition:all .15s">${dia.charAt(0).toUpperCase()+dia.slice(1)}</span>`).join('')}
+      ${dias.map((dia,i)=>`<span onclick="cambiarDia(${i})" style="padding:6px 13px;border-radius:99px;cursor:pointer;font-size:12.5px;font-weight:600;background:${i===diaActualIdx?'var(--green)':'var(--surface2)'};color:${i===diaActualIdx?'white':'var(--text2)'};border:1px solid ${i===diaActualIdx?'var(--green)':'var(--border)'};transition:all .2s ease">${dia.charAt(0).toUpperCase()+dia.slice(1)}</span>`).join('')}
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
       <div class="input-group" style="margin:0"><label class="input-label">Desayuno</label><input id="f-desayuno" placeholder="Ej: Avena con frutas" value="${existente.desayuno||''}"></div>
@@ -1705,7 +1847,7 @@ function renderFormDieta(paciente, dias, diaActualIdx) {
     </div>
     <div style="margin-top:18px;display:flex;gap:8px">
       <button class="btn btn-primary btn-full" onclick="guardarDiaDieta('${paciente.usuario}')">
-        ${diaActualIdx<6?'Guardar y siguiente':'Guardar y terminar'}
+        ${diaActualIdx<6?'Guardar y siguiente →':'✓ Guardar y terminar'}
       </button>
     </div>
     <p style="text-align:center;font-size:11.5px;color:var(--text3);margin-top:10px">Día ${diaActualIdx+1} de 7</p>
@@ -1730,7 +1872,7 @@ async function guardarDiaDieta(usuario) {
   mostrarLoader('Guardando en Firebase...')
   await window._db.guardarPaciente(paciente); ocultarLoader()
   if (idx < 6) { window._diaIdx = idx+1; renderFormDieta(paciente, dias, idx+1) }
-  else { alert('Dieta semanal guardada en la nube'); dashboard() }
+  else { toast('success','Dieta semanal guardada','La dieta del paciente fue actualizada ✓'); setTimeout(() => dashboard(), 1200) }
 }
 
 /* ═══════════════════════════════════════
@@ -1788,7 +1930,6 @@ function _renderPanelPaciente(p) {
       ${icon(icon_name)} ${label}
     </button>`
 
-  // ── Header unificado siempre visible ──
   const header = `
   <div class="card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:14px">
@@ -1812,7 +1953,6 @@ function _renderPanelPaciente(p) {
     </div>
   </div>`
 
-  // ── Tabs ──
   const tabs = `
   <div class="nt-tabs" style="margin-bottom:16px">
     ${tabBtn('inicio','Hoy','home')}
@@ -1830,8 +1970,8 @@ function _renderPanelPaciente(p) {
       <div class="card-header"><div class="card-title">Registro de comidas</div><div class="card-subtitle">Marca cada comida al completarla</div></div>
       <div style="display:flex;flex-direction:column;gap:8px">
         ${[['desayuno','Desayuno','🌅'],['refa1','Refacción 1','🍎'],['almuerzo','Almuerzo','🍽️'],['refa2','Refacción 2','🥤'],['cena','Cena','🌙']].map(([k,label,em])=>`
-        <button onclick="marcarComida('${k}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius);border:1.5px solid ${p.comidas[k]?'var(--green)':'var(--border)'};background:${p.comidas[k]?'var(--green-light)':'var(--surface)'};cursor:pointer;font-family:Inter,sans-serif;text-align:left;width:100%;transition:all .15s">
-          <div style="width:38px;height:38px;border-radius:10px;background:${p.comidas[k]?'var(--green)':'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+        <button onclick="marcarComida('${k}')" id="meal-btn-${k}" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius);border:1.5px solid ${p.comidas[k]?'var(--green)':'var(--border)'};background:${p.comidas[k]?'var(--green-light)':'var(--surface)'};cursor:pointer;font-family:Inter,sans-serif;text-align:left;width:100%;transition:all .22s cubic-bezier(.22,1,.36,1)">
+          <div style="width:38px;height:38px;border-radius:10px;background:${p.comidas[k]?'var(--green)':'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all .22s ease">
             ${p.comidas[k]?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`:em}
           </div>
           <div style="flex:1">
@@ -1854,7 +1994,7 @@ function _renderPanelPaciente(p) {
       </div>
       <div id="dieta-hoy" style="display:flex;flex-direction:column;gap:10px">
         ${[['desayuno','Desayuno'],['refa1','Refacción 1'],['almuerzo','Almuerzo'],['refa2','Refacción 2'],['cena','Cena']].map(([k,label])=>`
-        <div style="padding:13px 16px;border-radius:var(--radius-sm);border:1.5px solid ${p.comidas[k]?'var(--green-muted)':'var(--border)'};background:${p.comidas[k]?'var(--green-light)':'var(--surface)'}">
+        <div style="padding:13px 16px;border-radius:var(--radius-sm);border:1.5px solid ${p.comidas[k]?'var(--green-muted)':'var(--border)'};background:${p.comidas[k]?'var(--green-light)':'var(--surface)'};transition:all .3s ease">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:.5px">${label}</span>
             ${p.comidas[k]?`<span style="font-size:11px;font-weight:700;color:var(--green-dark);background:var(--green-muted);padding:2px 8px;border-radius:99px">✓ Completado</span>`:''}
@@ -1870,7 +2010,7 @@ function _renderPanelPaciente(p) {
       <div class="card">
         <div class="card-header"><div><div class="card-title">Asistente de IA</div><div class="card-subtitle">Análisis personalizado con inteligencia artificial</div></div></div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <button class="btn btn-full btn-lg" onclick="analisisProgreso()" style="background:#7C4DFF;color:white;justify-content:flex-start;gap:14px;padding:16px">
+          <button class="btn btn-full btn-lg" onclick="analisisProgreso()" style="background:#7C4DFF;color:white;justify-content:flex-start;gap:14px;padding:16px;transition:all .22s ease" onmouseenter="this.style.background='#6B3DEE'" onmouseleave="this.style.background='#7C4DFF'">
             <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('ai')}</div>
             <div style="text-align:left"><div style="font-size:14px;font-weight:700">Analizar mi progreso</div><div style="font-size:12px;opacity:.8;margin-top:2px">Retroalimentación personalizada con IA</div></div>
           </button>
@@ -1940,12 +2080,11 @@ function switchPacienteTab(tab) {
   _renderPanelPaciente(pacienteActual)
 }
 
-
 /* ═══════════════════════════════════════
-   MARCAR COMIDA
+   MARCAR COMIDA — con micro-animación
 ═══════════════════════════════════════ */
 async function marcarComida(tipo) {
-  if (pacienteActual.comidas[tipo]) { alert('Ya marcaste esta comida'); return }
+  if (pacienteActual.comidas[tipo]) { toast('info','Ya marcada','Ya registraste esta comida hoy'); return }
   pacienteActual.comidas[tipo] = true
   pacienteActual.progreso += 20
   if (pacienteActual.progreso > 100) pacienteActual.progreso = 100
@@ -1955,7 +2094,13 @@ async function marcarComida(tipo) {
   if (!entradaHoy) { entradaHoy = {fecha:hoy,comidas:[],calorias:0}; pacienteActual.historialComidas.push(entradaHoy) }
   let calPorComida = {desayuno:Math.round(pacienteActual.calorias*.25),refa1:Math.round(pacienteActual.calorias*.1),almuerzo:Math.round(pacienteActual.calorias*.35),refa2:Math.round(pacienteActual.calorias*.1),cena:Math.round(pacienteActual.calorias*.2)}
   entradaHoy.comidas.push(tipo); entradaHoy.calorias += calPorComida[tipo]||0
-  if (pacienteActual.progreso == 100) { pacienteActual.racha += 1; alert('¡Felicidades! Completaste tu día. Racha: ' + pacienteActual.racha) }
+  const nombres = {desayuno:'Desayuno',refa1:'Refacción 1',almuerzo:'Almuerzo',refa2:'Refacción 2',cena:'Cena'}
+  if (pacienteActual.progreso == 100) {
+    pacienteActual.racha += 1
+    toast('success','¡Día completo! 🔥',`Racha actual: ${pacienteActual.racha} días consecutivos`, 4500)
+  } else {
+    toast('success',`${nombres[tipo]} registrado`,`${pacienteActual.progreso}% del día completado`)
+  }
   await window._db.guardarPaciente(pacienteActual); panelPaciente()
 }
 
@@ -1977,7 +2122,7 @@ function renderDashboard() {
       {label:'Calorías consumidas',data:dataKcal.length?dataKcal:[0],backgroundColor:'rgba(22,163,74,.7)',borderRadius:8,borderSkipped:false},
       {label:'Meta diaria',data:labels.map(()=>meta),type:'line',borderColor:'#d97706',borderDash:[6,4],pointRadius:0,borderWidth:2,fill:false}
     ]},
-    options:{responsive:true,plugins:{legend:{labels:{font:{family:'Inter'},color:'#64748b'}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+' kcal'}}},scales:{y:{beginAtZero:true,ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{color:'#f1f5f9'}},x:{ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{display:false}}}}
+    options:{responsive:true,animation:{duration:800,easing:'easeOutQuart'},plugins:{legend:{labels:{font:{family:'Inter'},color:'#64748b'}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+' kcal'}}},scales:{y:{beginAtZero:true,ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{color:'#f1f5f9'}},x:{ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{display:false}}}}
   })
   let nombres = {desayuno:'Desayuno',refa1:'Refacción 1',almuerzo:'Almuerzo',refa2:'Refacción 2',cena:'Cena'}
   let histDiv = document.getElementById('historial-comidas')
@@ -2020,7 +2165,7 @@ async function pedido() {
   let direccion = document.getElementById('direccion').value.trim()
   let pago = document.getElementById('metodoPago').value
   let hoy = diaActual(), comida = pacienteActual.dietasemanal?.[hoy]?.[tipo]||null
-  if (!direccion) { alert('Ingresa tu dirección de entrega'); return }
+  if (!direccion) { toast('warning','Dirección requerida','Ingresa tu dirección de entrega'); return }
   if (!comida) {
     if (!pacienteActual.notificaciones) pacienteActual.notificaciones = []
     pacienteActual.notificaciones.push({dia:hoy,tipo})
@@ -2031,7 +2176,7 @@ async function pedido() {
   let cambio = ''
   if (pago=='efectivo') {
     let billete = parseFloat(document.getElementById('billete').value)
-    if (!billete||billete<=0) { alert('Ingresa el monto con el que pagarás'); return }
+    if (!billete||billete<=0) { toast('warning','Monto requerido','Ingresa el monto con el que pagarás'); return }
     cambio = `Llevaremos cambio para Q${billete}.`
   }
   mostrarConfirmacion(`Pedido confirmado\n\n${comida}\n${direccion}\n${pago=='efectivo'?'Efectivo':'Tarjeta'}\n${cambio}`)
@@ -2040,7 +2185,6 @@ async function pedido() {
 function mostrarConfirmacion(msg) {
   let overlay = document.createElement('div')
   overlay.id = 'modal-overlay'
-  overlay.className = ''
   overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px'
   overlay.innerHTML = `<div class="modal-box">
     <div class="modal-icon">${icon('food')}</div>
@@ -2058,7 +2202,7 @@ function mostrarConfirmacion(msg) {
 ═══════════════════════════════════════ */
 async function verNotificaciones(usuario) {
   let p = await window._db.getPaciente(usuario)
-  if (!p.notificaciones||p.notificaciones.length==0) { alert('Sin notificaciones'); return }
+  if (!p.notificaciones||p.notificaciones.length==0) { toast('info','Sin notificaciones','Este paciente no tiene notificaciones pendientes'); return }
   for (let n of p.notificaciones) {
     let nueva = prompt('Nueva dieta para '+n.tipo+' del '+n.dia)
     if (!p.dietasemanal) p.dietasemanal = {}
@@ -2066,7 +2210,8 @@ async function verNotificaciones(usuario) {
     p.dietasemanal[n.dia][n.tipo] = nueva
   }
   p.notificaciones = []
-  await window._db.guardarPaciente(p); alert('Dietas actualizadas')
+  await window._db.guardarPaciente(p)
+  toast('success','Dietas actualizadas','Los cambios se guardaron en Firebase')
 }
 
 async function verPaciente(usuario) {
@@ -2083,9 +2228,9 @@ async function verPaciente(usuario) {
       <span class="badge badge-${p.plan=='premium'?'green':p.plan=='estandar'?'gold':'muted'}">${p.plan||'básico'}</span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.edad}</div><div style="font-size:11px;color:var(--text3)">AÑOS</div></div>
-      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.peso}kg</div><div style="font-size:11px;color:var(--text3)">PESO</div></div>
-      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.altura}cm</div><div style="font-size:11px;color:var(--text3)">ALTURA</div></div>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center;transition:transform .2s ease" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='translateY(0)'"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.edad}</div><div style="font-size:11px;color:var(--text3)">AÑOS</div></div>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center;transition:transform .2s ease" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='translateY(0)'"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.peso}kg</div><div style="font-size:11px;color:var(--text3)">PESO</div></div>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center;transition:transform .2s ease" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform='translateY(0)'"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.altura}cm</div><div style="font-size:11px;color:var(--text3)">ALTURA</div></div>
     </div>
     <p style="font-size:13px;color:var(--text2)"><b>Objetivo:</b> ${p.objetivo}</p>
     <p style="font-size:13px;color:var(--text2);margin-top:6px"><b>Progreso:</b> ${p.progreso}%</p>
@@ -2109,7 +2254,7 @@ async function ranking() {
       <span class="badge badge-muted">${todos.length} participantes</span>
     </div>
     ${orden.map((p,i)=>`
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:${pacienteActual?.usuario===p.usuario?'var(--green-light)':'var(--surface2)'};margin-bottom:6px">
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:${pacienteActual?.usuario===p.usuario?'var(--green-light)':'var(--surface2)'};margin-bottom:6px;transition:all .2s ease;animation:cardIn .3s ${i*0.04}s ease both" onmouseenter="this.style.transform='translateX(3px)'" onmouseleave="this.style.transform='translateX(0)'">
       <span style="font-size:18px;width:28px;text-align:center">${i<3?medals[i]:'#'+(i+1)}</span>
       <span style="flex:1;font-size:13.5px;font-weight:600">${p.nombre}${pacienteActual?.usuario===p.usuario?' (tú)':''}</span>
       <span class="badge badge-green">${p.progreso}%</span>
@@ -2175,22 +2320,35 @@ async function procesarPago(tipo, origen) {
   let tarjeta = document.getElementById('numTarjeta').value
   let fecha   = document.getElementById('fechaVenc').value
   let cvv     = document.getElementById('cvv').value
-  if (tarjeta.length!=12||isNaN(tarjeta)) { alert('Número de tarjeta inválido'); return }
-  if (cvv.length!=3||isNaN(cvv)) { alert('CVV inválido'); return }
-  if (!fecha.match(/^\d{2}\/\d{2}$/)) { alert('Fecha inválida'); return }
-  alert('Pago procesado correctamente')
+  if (tarjeta.length!=12||isNaN(tarjeta)) { toast('error','Número inválido','Ingresa un número de tarjeta de 12 dígitos'); return }
+  if (cvv.length!=3||isNaN(cvv)) { toast('error','CVV inválido','El CVV debe ser de 3 dígitos'); return }
+  if (!fecha.match(/^\d{2}\/\d{2}$/)) { toast('error','Fecha inválida','Formato correcto: MM/AA'); return }
+  mostrarLoader('Procesando pago...')
+  await new Promise(r => setTimeout(r, 1200))
   mostrarLoader('Guardando en Firebase...')
   try {
     if (origen=='registro'&&tipo=='nutricionista') {
-      let temp=window._tempNutri; if(!temp){ocultarLoader();alert('Error: regístrate de nuevo');loginNutri();return}
-      temp.plan=planSeleccionado||'basico'; await window._db.guardarNutri(temp); window._tempNutri=null; ocultarLoader(); alert('Nutricionista registrado'); loginNutri(); return
+      let temp=window._tempNutri; if(!temp){ocultarLoader();toast('error','Error','Regístrate de nuevo');loginNutri();return}
+      temp.plan=planSeleccionado||'basico'; await window._db.guardarNutri(temp); window._tempNutri=null; ocultarLoader()
+      toast('success','¡Pago procesado!','Nutricionista registrado correctamente 🎉',4000)
+      setTimeout(() => loginNutri(), 1500)
+      return
     }
     if (origen=='nutri') {
-      let temp=window._tempPaciente; if(!temp){ocultarLoader();alert('Error: inténtalo de nuevo');dashboard();return}
-      temp.plan=planSeleccionado||'basico'; await window._db.guardarPaciente(temp); window._tempPaciente=null; ocultarLoader(); alert('Paciente creado'); dashboard(); return
+      let temp=window._tempPaciente; if(!temp){ocultarLoader();toast('error','Error','Inténtalo de nuevo');dashboard();return}
+      temp.plan=planSeleccionado||'basico'; await window._db.guardarPaciente(temp); window._tempPaciente=null; ocultarLoader()
+      toast('success','Paciente creado','El paciente fue registrado correctamente ✓',4000)
+      setTimeout(() => dashboard(), 1500)
+      return
+    }
+    if (origen=='onboarding') {
+      ocultarLoader()
+      toast('success','¡Pago procesado!','Tu cuenta fue creada exitosamente 🎉',4000)
+      setTimeout(() => loginNutri(), 1500)
+      return
     }
     ocultarLoader(); if(tipo=='nutricionista')loginNutri();else loginPaciente()
-  } catch(err) { ocultarLoader(); alert('Error al guardar en Firebase. Revisa tu conexión.') }
+  } catch(err) { ocultarLoader(); toast('error','Error al guardar','Revisa tu conexión e inténtalo de nuevo') }
 }
 
 /* ═══════════════════════════════════════
@@ -2204,14 +2362,16 @@ const INSIGNIAS = [
   {id:'ai_reto',    emoji:'🤖',nombre:'AI Warrior',  desc:'Completa un reto generado por AI'},
 ]
 function tieneInsignia(p, id) { return (p.insignias||[]).includes(id) }
+
 async function otorgarInsignia(p, id) {
   if (!p.insignias) p.insignias=[]
   if (!p.insignias.includes(id)) {
     p.insignias.push(id); let ins=INSIGNIAS.find(i=>i.id==id)
     await window._db.guardarPaciente(p)
-    setTimeout(()=>alert('Nueva insignia: '+ins.emoji+' '+ins.nombre), 300)
+    setTimeout(()=>toast('success',`Nueva insignia: ${ins.emoji} ${ins.nombre}`, ins.desc, 5000), 300)
   }
 }
+
 async function completarReto(idx) {
   if (!pacienteActual) return
   let retos=pacienteActual.retos||[], r=retos[idx]
@@ -2219,6 +2379,7 @@ async function completarReto(idx) {
   r.completado=true; r.fechaCompletado=new Date().toDateString()
   if (!pacienteActual.retosCompletados) pacienteActual.retosCompletados=0
   pacienteActual.retosCompletados++
+  toast('success','¡Reto completado! 🎉',`Tienes ${pacienteActual.retosCompletados} retos completados`)
   if (pacienteActual.retosCompletados===1) await otorgarInsignia(pacienteActual,'primer_reto')
   if (pacienteActual.retosCompletados>=5)  await otorgarInsignia(pacienteActual,'retos5')
   if (pacienteActual.retosCompletados>=10) await otorgarInsignia(pacienteActual,'retos10')
@@ -2227,7 +2388,7 @@ async function completarReto(idx) {
 }
 
 async function generarRetoAI() {
-  if (!tieneAI()) { alert('Función disponible en planes Estándar y Premium'); return }
+  if (!tieneAI()) { toast('warning','Función premium','Disponible en planes Estándar y Premium'); return }
   let btn=document.getElementById('btn-generar-ai')
   if (btn) { btn.disabled=true; btn.textContent='Generando...' }
   let promptText='Eres un nutricionista experto. Genera UN reto nutricional creativo y motivador. Responde SOLO con JSON (sin markdown): {"titulo":"...","descripcion":"...","duracion":"X días","dificultad":"Fácil|Medio|Difícil"}\nPaciente: '+pacienteActual.nombre+', Objetivo: '+pacienteActual.objetivo+', Racha: '+pacienteActual.racha+' días.'
@@ -2237,8 +2398,13 @@ async function generarRetoAI() {
     let texto=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim()
     let retoAI=JSON.parse(texto); retoAI.esAI=true; retoAI.completado=false; retoAI.fechaCreado=new Date().toDateString()
     if (!pacienteActual.retos) pacienteActual.retos=[]
-    pacienteActual.retos.unshift(retoAI); await window._db.guardarPaciente(pacienteActual); paginaRetos()
-  } catch(e) { alert('Error al generar reto. Intenta de nuevo.'); if(btn){btn.disabled=false;btn.textContent='Generar reto con AI'} }
+    pacienteActual.retos.unshift(retoAI); await window._db.guardarPaciente(pacienteActual)
+    toast('success','Reto AI generado','Tu nuevo reto personalizado está listo ✨', 4000)
+    paginaRetos()
+  } catch(e) {
+    toast('error','Error al generar','No se pudo conectar con la IA. Intenta de nuevo.')
+    if(btn){btn.disabled=false;btn.textContent='Generar reto con AI'}
+  }
 }
 
 function paginaRetos() {
@@ -2250,17 +2416,17 @@ function paginaRetos() {
     {titulo:'Sin azúcar refinada por 3 días',descripcion:'Evita dulces, refrescos y postres durante 3 días consecutivos.',duracion:'3 días',dificultad:'Difícil',completado:false,esAI:false,fechaCreado:new Date().toDateString()},
   ]
   let retos=pacienteActual.retos, totalRetos=pacienteActual.retosCompletados||0
-  let insHtml=INSIGNIAS.map(ins=>{let t=tieneInsignia(pacienteActual,ins.id);return`<div title="${ins.desc}" style="text-align:center;opacity:${t?1:.25};filter:${t?'none':'grayscale(1)'};padding:8px"><div style="font-size:26px">${ins.emoji}</div><div style="font-size:10px;color:var(--text3);margin-top:3px">${ins.nombre}</div></div>`}).join('')
+  let insHtml=INSIGNIAS.map(ins=>{let t=tieneInsignia(pacienteActual,ins.id);return`<div title="${ins.desc}" style="text-align:center;opacity:${t?1:.25};filter:${t?'none':'grayscale(1)'};padding:8px;transition:all .3s ease;cursor:${t?'default':'not-allowed'}" ${t?`onmouseenter="this.style.transform='scale(1.15)'" onmouseleave="this.style.transform='scale(1)'"`:''} ><div style="font-size:26px">${ins.emoji}</div><div style="font-size:10px;color:var(--text3);margin-top:3px">${ins.nombre}</div></div>`}).join('')
   window._db.getTodosPacientes().then(todos=>{
     let rankHtml=todos.sort((a,b)=>(b.retosCompletados||0)-(a.retosCompletados||0)).slice(0,5).map((p,i)=>{
       let medal=['🥇','🥈','🥉','4️⃣','5️⃣'][i], esActual=p.usuario===pacienteActual.usuario
-      return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:var(--radius-sm);background:${esActual?'var(--green-light)':'var(--surface2)'};margin-bottom:5px"><span>${medal} <b>${p.nombre}</b>${esActual?' (tú)':''}</span><span class="badge badge-green">${p.retosCompletados||0} retos</span></div>`
+      return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:var(--radius-sm);background:${esActual?'var(--green-light)':'var(--surface2)'};margin-bottom:5px;transition:transform .2s ease" onmouseenter="this.style.transform='translateX(3px)'" onmouseleave="this.style.transform='translateX(0)'"><span>${medal} <b>${p.nombre}</b>${esActual?' (tú)':''}</span><span class="badge badge-green">${p.retosCompletados||0} retos</span></div>`
     }).join('')
     let rankDiv=document.getElementById('ranking-retos'); if(rankDiv) rankDiv.innerHTML=rankHtml||'<p style="color:var(--text3)">Sin datos</p>'
   })
   let difColor={Fácil:'var(--green)',Medio:'var(--gold)',Difícil:'var(--red)'}
   let retosHtml=retos.map((r,i)=>`
-  <div style="border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;background:${r.completado?'var(--green-light)':'var(--surface)'}">
+  <div style="border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;background:${r.completado?'var(--green-light)':'var(--surface)'};transition:all .25s ease;animation:cardIn .3s ${i*0.05}s ease both" onmouseenter="this.style.transform='translateY(-1px)';this.style.boxShadow='var(--shadow-sm)'" onmouseleave="this.style.transform='translateY(0)';this.style.boxShadow='none'">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
       <b style="font-size:13.5px">${r.esAI?'<span style="background:var(--blue-light);color:var(--blue);font-size:10px;padding:1px 7px;border-radius:99px;font-weight:700">AI</span> ':''}${r.titulo}</b>
       <span style="background:${difColor[r.dificultad]||'var(--gold)'};color:white;border-radius:99px;font-size:10px;font-weight:700;padding:2px 9px;flex-shrink:0">${r.dificultad}</span>
@@ -2287,7 +2453,46 @@ function paginaRetos() {
 }
 
 function reto() { paginaRetos() }
-function modoOscuro() { document.body.classList.toggle('dark') }
+
+function modoOscuro() {
+  document.body.classList.toggle('dark')
+  const isDark = document.body.classList.contains('dark')
+  toast('info', isDark ? 'Modo oscuro activado' : 'Modo claro activado', '', 2000)
+}
+
+/* ═══════════════════════════════════════
+   ANALYTICS NUTRICIONISTA (dashboard nutri)
+═══════════════════════════════════════ */
+function renderDashboardNutri(misPacientes) {
+  if (!misPacientes || !misPacientes.length) return
+  let diasSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+  let labels = misPacientes.map(p => p.nombre.split(' ')[0])
+  let data   = misPacientes.map(p => p.progreso || 0)
+  let ctx    = document.getElementById('grafica-nutri')
+  if (!ctx) return
+  if (window._nutriChart) window._nutriChart.destroy()
+  window._nutriChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Progreso hoy (%)',
+        data,
+        backgroundColor: data.map(v => v >= 80 ? 'rgba(22,163,74,.75)' : v >= 50 ? 'rgba(217,119,6,.75)' : 'rgba(220,38,38,.7)'),
+        borderRadius: 8, borderSkipped: false
+      }]
+    },
+    options: { responsive: true, animation:{duration:900,easing:'easeOutQuart'}, plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.y+'% completado'}}}, scales:{y:{beginAtZero:true,max:100,ticks:{color:'#94a3b8',font:{family:'Inter'},callback:v=>v+'%'},grid:{color:'#f1f5f9'}},x:{ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{display:false}}}}
+  })
+  let sorted = [...misPacientes].sort((a,b)=>(b.racha||0)-(a.racha||0))
+  let mejDiv = document.getElementById('mejores-rachas')
+  let peoDiv = document.getElementById('peores-rachas')
+  if (mejDiv) mejDiv.innerHTML = sorted.slice(0,3).map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">${p.nombre}</span><span class="badge badge-green">🔥 ${p.racha||0}d</span></div>`).join('')
+  if (peoDiv) {
+    let atencion = misPacientes.filter(p => (p.progreso||0) < 40)
+    peoDiv.innerHTML = atencion.length ? atencion.slice(0,3).map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">${p.nombre}</span><span class="badge badge-red">${p.progreso||0}%</span></div>`).join('') : `<p style="font-size:13px;color:var(--green);font-weight:600">¡Todos van bien! ✓</p>`
+  }
+}
 
 /* ═══════════════════════════════════════
    FUNCIONES AI
@@ -2309,7 +2514,10 @@ async function analisisProgreso() {
     const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:promptText}]})})
     const data=await res.json()
     document.getElementById('analisis-resultado').innerHTML=data.content.map(b=>b.text||'').join('').replace(/\n/g,'<br>')
-  } catch(e) { document.getElementById('analisis-resultado').innerHTML='Error al conectar con AI. Intenta de nuevo.' }
+  } catch(e) {
+    document.getElementById('analisis-resultado').innerHTML='Error al conectar con AI. Intenta de nuevo.'
+    toast('error','Error de conexión','No se pudo contactar con la IA')
+  }
 }
 
 async function chatNutriAI() {
