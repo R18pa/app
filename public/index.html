@@ -3,22 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NutriTrack Ultra</title>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+<title>NutriTrack Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-<!-- ============================================================
-     🔥 FIREBASE SDK
-     Reemplaza los valores de firebaseConfig con los tuyos desde:
-     https://console.firebase.google.com → Tu proyecto → Configuración
-     ============================================================ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getDatabase, ref, set, get, update, onValue, push, remove
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-  // ⚠️ REEMPLAZA ESTOS VALORES CON LOS DE TU PROYECTO FIREBASE
+  import { getDatabase, ref, set, get, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   const firebaseConfig = {
     apiKey: "AIzaSyBtmTeHLQWe14H20XUtu90BsoSJIbGEhHU",
     authDomain: "nutritrack-e6f2a.firebaseapp.com",
@@ -29,212 +20,944 @@
     appId: "1:341438034576:web:95c9695295e89dd986de15",
     measurementId: "G-VJTN170P57"
   };
-
   const firebaseApp = initializeApp(firebaseConfig);
   const db = getDatabase(firebaseApp);
-
-  // ===== CAPA DE BASE DE DATOS =====
-  // Exponer funciones globalmente para el código legacy
   window._db = {
-    // --- Guardar nutricionista ---
-    async guardarNutri(nutri) {
-      await set(ref(db, `nutricionistas/${nutri.user}`), nutri);
-    },
-    // --- Obtener nutricionista ---
-    async getNutri(user) {
-      const snap = await get(ref(db, `nutricionistas/${user}`));
-      return snap.exists() ? snap.val() : null;
-    },
-    // --- Guardar paciente ---
-    async guardarPaciente(paciente) {
-      await set(ref(db, `pacientes/${paciente.usuario}`), paciente);
-    },
-    // --- Obtener paciente ---
-    async getPaciente(usuario) {
-      const snap = await get(ref(db, `pacientes/${usuario}`));
-      return snap.exists() ? snap.val() : null;
-    },
-    // --- Obtener todos los pacientes de un nutricionista ---
-    async getPacientesDeNutri(nutriUser) {
-      const snap = await get(ref(db, 'pacientes'));
-      if (!snap.exists()) return [];
-      const todos = snap.val();
-      return Object.values(todos).filter(p => p.nutri === nutriUser);
-    },
-    // --- Obtener todos los pacientes (para ranking) ---
-    async getTodosPacientes() {
-      const snap = await get(ref(db, 'pacientes'));
-      if (!snap.exists()) return [];
-      return Object.values(snap.val());
-    },
-    // --- Escuchar cambios en tiempo real en un paciente ---
-    escucharPaciente(usuario, callback) {
-      return onValue(ref(db, `pacientes/${usuario}`), snap => {
-        if (snap.exists()) callback(snap.val());
-      });
-    },
-    // --- Escuchar cambios en tiempo real en pacientes de un nutri ---
-    escucharPacientesNutri(nutriUser, callback) {
-      return onValue(ref(db, 'pacientes'), snap => {
-        if (!snap.exists()) { callback([]); return; }
-        const todos = snap.val();
-        callback(Object.values(todos).filter(p => p.nutri === nutriUser));
-      });
-    }
+    async guardarNutri(nutri) { await set(ref(db, `nutricionistas/${nutri.user}`), nutri); },
+    async getNutri(user) { const snap = await get(ref(db, `nutricionistas/${user}`)); return snap.exists() ? snap.val() : null; },
+    async guardarPaciente(paciente) { await set(ref(db, `pacientes/${paciente.usuario}`), paciente); },
+    async getPaciente(usuario) { const snap = await get(ref(db, `pacientes/${usuario}`)); return snap.exists() ? snap.val() : null; },
+    async getPacientesDeNutri(nutriUser) { const snap = await get(ref(db, 'pacientes')); if (!snap.exists()) return []; return Object.values(snap.val()).filter(p => p.nutri === nutriUser); },
+    async getTodosPacientes() { const snap = await get(ref(db, 'pacientes')); if (!snap.exists()) return []; return Object.values(snap.val()); },
+    escucharPaciente(usuario, callback) { return onValue(ref(db, `pacientes/${usuario}`), snap => { if (snap.exists()) callback(snap.val()); }); },
+    escucharPacientesNutri(nutriUser, callback) { return onValue(ref(db, 'pacientes'), snap => { if (!snap.exists()) { callback([]); return; } callback(Object.values(snap.val()).filter(p => p.nutri === nutriUser)); }); }
   };
-
   window._dbReady = true;
   window.dispatchEvent(new Event('dbReady'));
 </script>
 
 <style>
-*{box-sizing:border-box;}
-body{font-family:'Nunito',Arial,sans-serif;margin:0;background:#f2f2f2;}
-header{background:#4CAF50;color:white;padding:15px;display:flex;justify-content:space-between;align-items:center;}
-header h2{margin:0;}
-.header-btns{display:flex;gap:6px;}
-.container{padding:15px;max-width:900px;margin:auto;padding-bottom:140px;}
-.card{background:white;padding:20px;margin-top:15px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.15);}
-button{padding:10px;border:none;border-radius:6px;background:#4CAF50;color:white;margin:5px;cursor:pointer;font-family:'Nunito',sans-serif;}
-input,select{padding:10px;margin:5px;border-radius:6px;border:1px solid #ccc;width:90%;font-family:'Nunito',sans-serif;}
-.progress{background:#ddd;height:25px;border-radius:20px;}
-.bar{height:100%;background:#4CAF50;border-radius:20px;color:white;text-align:center;}
-.nav{position:fixed;bottom:0;width:100%;background:white;display:flex;justify-content:space-around;padding:10px;box-shadow:0 -2px 8px rgba(0,0,0,0.2);}
-.dark{background:#121212;color:white;}
-.dark .card{background:#1e1e1e;color:white;}
-.dark .nav{background:#1e1e1e;color:white;}
-.dark input,.dark select{background:#2a2a2a;color:white;border-color:#444;}
-.avatar{font-size:60px;text-align:center;}
-.sync-badge{background:#e8f5e9;color:#2e7d32;border-radius:20px;font-size:11px;font-weight:700;padding:3px 10px;margin-left:6px;animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
-.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-size:18px;font-weight:700;color:#4CAF50;gap:12px;}
-.spinner{width:40px;height:40px;border:4px solid #e0e0e0;border-top-color:#4CAF50;border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* ═══════════════════════════════════════
+   VARIABLES & RESET
+═══════════════════════════════════════ */
+:root {
+  --green:       #16a34a;
+  --green-dark:  #15803d;
+  --green-light: #dcfce7;
+  --green-muted: #bbf7d0;
+  --gold:        #d97706;
+  --gold-light:  #fef3c7;
+  --blue:        #1d4ed8;
+  --blue-light:  #dbeafe;
+  --red:         #dc2626;
+  --red-light:   #fee2e2;
 
-/* ===== PLANES ===== */
-.planes-grid{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
-.plan-card{background:white;border-radius:16px;box-shadow:0 4px 18px rgba(0,0,0,0.13);flex:1;min-width:220px;max-width:280px;overflow:hidden;position:relative;border:2px solid transparent;transition:transform .2s,box-shadow .2s;}
-.plan-card:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(0,0,0,0.18);}
-.plan-card.selected{border-color:#4CAF50;box-shadow:0 0 0 3px #a8d5a2;}
-.plan-tag{background:#CCFF00;color:#222;font-weight:900;text-align:center;padding:8px;font-size:13px;letter-spacing:.5px;}
-.plan-body{padding:20px;}
-.plan-nombre{font-size:22px;font-weight:900;margin:0 0 4px;}
-.plan-popular{background:#FFA726;color:white;border-radius:20px;font-size:11px;font-weight:700;padding:3px 10px;margin-left:8px;vertical-align:middle;}
-.plan-features{list-style:disc;padding-left:18px;font-size:14px;color:#444;margin:12px 0;}
-.plan-features li{margin-bottom:6px;}
-.plan-precio{font-size:32px;font-weight:900;color:#222;margin:14px 0 2px;}
-.plan-precio span{font-size:15px;font-weight:600;color:#888;}
-.plan-sub{font-size:12px;color:#aaa;margin-bottom:14px;}
-.btn-plan{width:100%;padding:12px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;}
-.btn-plan-basico{background:#E8EAF6;color:#3949AB;}
-.btn-plan-estandar{background:#FFA726;color:white;}
-.btn-plan-premium{background:#E8EAF6;color:#3949AB;}
-.plan-card.selected .btn-plan{background:#4CAF50;color:white;}
-.check-selected{position:absolute;top:54px;right:14px;background:#4CAF50;color:white;border-radius:50%;width:24px;height:24px;display:none;align-items:center;justify-content:center;font-size:14px;font-weight:900;}
-.plan-card.selected .check-selected{display:flex;}
-.dark .plan-card{background:#1e1e1e;color:white;}
-.dark .plan-features{color:#ccc;}
-.dark .plan-nombre,.dark .plan-precio{color:white;}
+  --bg:          #f8fafc;
+  --surface:     #ffffff;
+  --surface2:    #f1f5f9;
+  --surface3:    #e2e8f0;
+  --border:      #e2e8f0;
+  --border2:     #cbd5e1;
 
-/* ===== CHAT AI ===== */
-.chat-box{height:280px;overflow-y:auto;border:1px solid #eee;border-radius:10px;padding:12px;background:#fafafa;display:flex;flex-direction:column;gap:8px;}
-.dark .chat-box{background:#2a2a2a;border-color:#444;}
-.msg{padding:10px 14px;border-radius:16px;max-width:80%;font-size:14px;line-height:1.5;}
-.msg.user{background:#4CAF50;color:white;align-self:flex-end;border-bottom-right-radius:4px;}
-.msg.ai{background:#e8f5e9;color:#1b5e20;align-self:flex-start;border-bottom-left-radius:4px;}
-.dark .msg.ai{background:#1b5e20;color:#c8e6c9;}
-.msg.loading{background:#f0f0f0;color:#999;font-style:italic;}
-.dark .msg.loading{background:#333;color:#888;}
-.chat-input-row{display:flex;gap:6px;margin-top:8px;}
-.chat-input-row input{flex:1;margin:0;}
-.chat-input-row button{margin:0;white-space:nowrap;}
-.ai-locked{text-align:center;padding:20px;background:#fff8e1;border-radius:10px;color:#f57f17;font-size:14px;}
-.chip-comida{padding:7px 13px;border-radius:20px;background:#f0f0f0;color:#555;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;}
-.chip-comida.chip-activo{background:#4CAF50;color:white;}
-.chip-pago{padding:10px 18px;border-radius:10px;background:#f0f0f0;color:#555;font-size:14px;font-weight:700;cursor:pointer;flex:1;text-align:center;transition:background .15s;}
-.chip-pago.chip-pago-activo{background:#4CAF50;color:white;}
+  --text:        #0f172a;
+  --text2:       #475569;
+  --text3:       #94a3b8;
+
+  --radius:      12px;
+  --radius-sm:   8px;
+  --radius-lg:   18px;
+  --radius-xl:   24px;
+
+  --shadow-sm:   0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow:      0 4px 16px rgba(0,0,0,.08), 0 2px 6px rgba(0,0,0,.04);
+  --shadow-lg:   0 10px 40px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06);
+
+  --sidebar-w:   260px;
+  --header-h:    62px;
+  --trans:       all .22s cubic-bezier(.4,0,.2,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+/* ═══════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════ */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 16px 0 20px;
+  gap: 12px;
+  z-index: 400;
+  box-shadow: var(--shadow-sm);
+}
+
+#topbar-logo {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; cursor: pointer;
+  flex: 1;
+}
+.logo-mark {
+  width: 34px; height: 34px;
+  background: var(--green);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.logo-text-wrap { display: flex; flex-direction: column; line-height: 1.15; }
+.logo-name {
+  font-family: 'Sora', sans-serif;
+  font-size: 15px; font-weight: 700;
+  color: var(--text); letter-spacing: -.3px;
+}
+.logo-sub {
+  font-size: 9.5px; font-weight: 500;
+  color: var(--text3); letter-spacing: .8px;
+  text-transform: uppercase;
+}
+
+#topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+.tb-badge {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 11px; border-radius: 99px;
+  font-size: 11.5px; font-weight: 600;
+  background: var(--green-light); color: var(--green-dark);
+  border: none; cursor: default;
+}
+.tb-badge .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  animation: blink 2s ease infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+.tb-btn {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text2);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: var(--trans);
+}
+.tb-btn:hover { background: var(--surface2); color: var(--text); }
+
+/* hamburger - solo visible en mobile */
+#btn-hamburger { display: none; }
+
+/* ═══════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════ */
+#sidebar-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.45);
+  z-index: 490;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+#sidebar-overlay.active { opacity: 1; pointer-events: all; }
+
+#sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 500;
+  display: flex; flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform .28s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto;
+}
+#sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
+
+/* Perfil en sidebar */
+.sb-profile {
+  display: flex; align-items: center; gap: 11px;
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sb-avatar {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--green); color: #fff;
+  font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sb-name { font-size: 13.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.sb-role { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.sb-plan-badge {
+  display: inline-flex; align-items: center;
+  padding: 1px 7px; border-radius: 99px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+  margin-top: 3px;
+}
+.sb-plan-badge.basico   { background: var(--surface2); color: var(--text2); }
+.sb-plan-badge.estandar { background: var(--gold-light); color: var(--gold); }
+.sb-plan-badge.premium  { background: var(--green-light); color: var(--green-dark); }
+
+/* Secciones sidebar */
+.sb-section { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.sb-section:last-child { border-bottom: none; }
+.sb-section-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text3);
+  padding: 0 16px 6px;
+}
+
+.sb-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; margin: 1px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px; font-weight: 500; color: var(--text2);
+  cursor: pointer; transition: var(--trans);
+  border: none; background: transparent; width: calc(100% - 16px);
+  text-align: left; font-family: 'Inter', sans-serif;
+}
+.sb-item:hover { background: var(--surface2); color: var(--text); }
+.sb-item.active {
+  background: var(--green-light); color: var(--green-dark); font-weight: 600;
+}
+.sb-item.active svg { stroke: var(--green-dark); }
+.sb-item svg { flex-shrink: 0; opacity: .7; transition: var(--trans); }
+.sb-item:hover svg, .sb-item.active svg { opacity: 1; }
+.sb-item.danger { color: var(--red); }
+.sb-item.danger:hover { background: var(--red-light); color: var(--red); }
+.sb-item.danger svg { opacity: 1; }
+
+/* ═══════════════════════════════════════
+   CONTENIDO PRINCIPAL
+═══════════════════════════════════════ */
+#main-wrap {
+  padding-top: var(--header-h);
+  min-height: 100vh;
+}
+.container {
+  padding: 24px 16px 100px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════
+   CARDS
+═══════════════════════════════════════ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
+  margin-top: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.card:first-child { margin-top: 0; }
+
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px; padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.card-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 16px; font-weight: 700; color: var(--text);
+  letter-spacing: -.2px;
+}
+.card-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+/* ═══════════════════════════════════════
+   BOTONES
+═══════════════════════════════════════ */
+button {
+  font-family: 'Inter', sans-serif;
+  cursor: pointer; border: none; outline: none;
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 18px; border-radius: var(--radius-sm);
+  font-size: 13.5px; font-weight: 600;
+  transition: var(--trans); cursor: pointer; border: none;
+  white-space: nowrap;
+}
+.btn-primary   { background: var(--green); color: #fff; }
+.btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(22,163,74,.3); }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border2); }
+.btn-secondary:hover { background: var(--surface2); }
+.btn-ghost     { background: transparent; color: var(--text2); padding: 8px 12px; }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-danger    { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-gold      { background: var(--gold); color: #fff; }
+.btn-gold:hover { background: #b45309; }
+.btn-full { width: 100%; }
+.btn-lg { padding: 13px 22px; font-size: 14.5px; border-radius: var(--radius); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ═══════════════════════════════════════
+   INPUTS
+═══════════════════════════════════════ */
+.input-group { margin-bottom: 14px; }
+.input-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--text2); margin-bottom: 6px; letter-spacing: .2px;
+}
+.input-field, input:not([type=hidden]):not([type=checkbox]):not([type=radio]),
+select {
+  width: 100%; padding: 10px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px; font-family: 'Inter', sans-serif;
+  color: var(--text); background: var(--surface);
+  transition: border-color .18s, box-shadow .18s;
+  outline: none; margin: 0;
+}
+.input-field:focus, input:focus, select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+}
+.input-field::placeholder, input::placeholder { color: var(--text3); }
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ═══════════════════════════════════════
+   PROGRESS
+═══════════════════════════════════════ */
+.progress {
+  background: var(--surface2);
+  height: 10px; border-radius: 99px; overflow: hidden;
+}
+.bar {
+  height: 100%; background: var(--green); border-radius: 99px;
+  transition: width .5s ease;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding-right: 6px; font-size: 9px; font-weight: 700; color: #fff;
+}
+
+/* ═══════════════════════════════════════
+   PLANES
+═══════════════════════════════════════ */
+.planes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px; margin-top: 10px;
+}
+.plan-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg); overflow: hidden;
+  border: 2px solid var(--border);
+  position: relative; cursor: pointer;
+  transition: var(--trans);
+}
+.plan-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--border2); }
+.plan-card.selected { border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,.15); }
+.plan-tag {
+  background: var(--green-light); color: var(--green-dark);
+  text-align: center; padding: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px;
+}
+.plan-body { padding: 18px; }
+.plan-nombre {
+  font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700;
+  color: var(--text); margin-bottom: 4px;
+}
+.plan-popular {
+  background: var(--gold); color: #fff;
+  border-radius: 99px; font-size: 10px; font-weight: 700;
+  padding: 2px 9px; margin-left: 7px; vertical-align: middle;
+}
+.plan-features { list-style: none; margin: 12px 0; }
+.plan-features li {
+  font-size: 13px; color: var(--text2); padding: 4px 0;
+  display: flex; gap: 7px; align-items: flex-start;
+}
+.plan-features li::before {
+  content: '';
+  width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px;
+  background: var(--green-light) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpolyline points='2,7 5.5,10.5 12,4' fill='none' stroke='%2316a34a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/10px no-repeat;
+  border-radius: 50%;
+}
+.plan-precio {
+  font-family: 'Sora', sans-serif; font-size: 30px; font-weight: 800;
+  color: var(--text); margin: 14px 0 3px; line-height: 1;
+}
+.plan-precio span { font-size: 13px; font-weight: 400; color: var(--text3); }
+.plan-sub { font-size: 11px; color: var(--text3); margin-bottom: 14px; }
+.btn-plan {
+  width: 100%; padding: 11px; border-radius: var(--radius-sm);
+  font-size: 13.5px; font-weight: 700; cursor: pointer;
+  transition: var(--trans); border: none;
+}
+.btn-plan-basico   { background: var(--blue-light); color: var(--blue); }
+.btn-plan-estandar { background: var(--gold); color: #fff; }
+.btn-plan-premium  { background: var(--green); color: #fff; }
+.plan-card.selected .btn-plan { background: var(--green-dark); color: #fff; }
+.check-selected {
+  position: absolute; top: 52px; right: 12px;
+  background: var(--green); color: #fff; border-radius: 50%;
+  width: 22px; height: 22px;
+  display: none; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900;
+}
+.plan-card.selected .check-selected { display: flex; }
+
+/* ═══════════════════════════════════════
+   CHAT AI
+═══════════════════════════════════════ */
+.chat-box {
+  height: 290px; overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+  background: var(--surface2);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.msg {
+  padding: 10px 14px; border-radius: 14px;
+  max-width: 80%; font-size: 13.5px; line-height: 1.5;
+}
+.msg.user { background: var(--green); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.msg.ai   { background: var(--surface); color: var(--text); align-self: flex-start; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.msg.loading { background: var(--surface); color: var(--text3); font-style: italic; align-self: flex-start; border: 1px solid var(--border); }
+.chat-input-row { display: flex; gap: 7px; margin-top: 8px; }
+.chat-input-row input { flex: 1; }
+.chat-input-row button { margin: 0; }
+.ai-locked {
+  text-align: center; padding: 20px;
+  background: var(--gold-light); border-radius: var(--radius);
+  color: var(--gold); font-size: 13.5px; border: 1px solid #fde68a;
+}
+
+/* ═══════════════════════════════════════
+   CHIPS COMIDA / PAGO
+═══════════════════════════════════════ */
+.chip-comida {
+  padding: 7px 14px; border-radius: 99px;
+  background: var(--surface2); color: var(--text2);
+  font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: var(--trans); border: 1.5px solid var(--border);
+}
+.chip-comida.chip-activo { background: var(--green); color: #fff; border-color: var(--green); }
+
+.chip-pago {
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  background: var(--surface2); color: var(--text2);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  flex: 1; text-align: center; transition: var(--trans);
+  border: 1.5px solid var(--border);
+}
+.chip-pago.chip-pago-activo { background: var(--green); color: #fff; border-color: var(--green); }
+
+/* ═══════════════════════════════════════
+   LOADER
+═══════════════════════════════════════ */
+.loading-overlay {
+  position: fixed; inset: 0;
+  background: rgba(248,250,252,.92);
+  backdrop-filter: blur(4px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 9999; gap: 14px;
+}
+.spinner {
+  width: 38px; height: 38px;
+  border: 3px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+}
+.spinner-label {
+  font-size: 13.5px; font-weight: 600; color: var(--text2);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════
+   NAV INFERIOR (obsoleta, reemplazada por sidebar)
+   Se mantiene solo como fallback
+═══════════════════════════════════════ */
+.nav { display: none; }
+
+/* ═══════════════════════════════════════
+   PANTALLA DE INICIO (LANDING)
+═══════════════════════════════════════ */
+.landing-hero {
+  min-height: calc(100vh - var(--header-h));
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 48px 20px 80px;
+}
+.landing-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 99px;
+  background: var(--green-light); color: var(--green-dark);
+  font-size: 11.5px; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; margin-bottom: 22px;
+  border: 1px solid var(--green-muted);
+}
+.landing-title {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(32px, 5.5vw, 54px);
+  font-weight: 800; color: var(--text);
+  letter-spacing: -1.5px; line-height: 1.1;
+  margin-bottom: 16px;
+}
+.landing-title span { color: var(--green); }
+.landing-subtitle {
+  font-size: 15.5px; color: var(--text2);
+  max-width: 440px; line-height: 1.65;
+  margin-bottom: 36px;
+}
+.landing-cta { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+.landing-stats {
+  display: flex; gap: 40px; justify-content: center;
+  flex-wrap: wrap; margin-top: 56px;
+  padding-top: 36px; border-top: 1px solid var(--border);
+  width: 100%; max-width: 480px;
+}
+.stat-val {
+  font-family: 'Sora', sans-serif;
+  font-size: 30px; font-weight: 800; color: var(--text);
+  letter-spacing: -1px;
+}
+.stat-lbl { font-size: 11.5px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+
+/* Tarjetas de rol */
+.role-cards {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; max-width: 560px; margin: 0 auto 0;
+  padding: 0 0 32px; width: 100%;
+}
+.role-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-xl); padding: 24px 20px;
+  cursor: pointer; text-align: left; transition: var(--trans);
+}
+.role-card:hover { border-color: var(--green); box-shadow: var(--shadow); transform: translateY(-2px); }
+.role-icon {
+  width: 44px; height: 44px; border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.role-icon.green { background: var(--green-light); }
+.role-icon.gold  { background: var(--gold-light); }
+.role-title {
+  font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700;
+  color: var(--text); margin-bottom: 6px;
+}
+.role-desc { font-size: 12.5px; color: var(--text2); line-height: 1.5; margin-bottom: 16px; }
+.role-link { font-size: 12.5px; font-weight: 600; color: var(--green); display: flex; align-items: center; gap: 3px; }
+
+/* ═══════════════════════════════════════
+   AUTH SCREENS
+═══════════════════════════════════════ */
+.auth-wrap {
+  max-width: 390px; margin: 0 auto;
+  padding: 32px 16px 80px;
+}
+.auth-back {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  background: none; border: none; cursor: pointer;
+  margin-bottom: 28px; padding: 0;
+  font-family: 'Inter', sans-serif;
+  transition: color .15s;
+}
+.auth-back:hover { color: var(--text); }
+.auth-title {
+  font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800;
+  color: var(--text); letter-spacing: -.5px; margin-bottom: 6px;
+}
+.auth-sub { font-size: 13.5px; color: var(--text2); margin-bottom: 28px; }
+.auth-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 20px 0; color: var(--text3); font-size: 12px;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.auth-footer { text-align: center; font-size: 13px; color: var(--text2); margin-top: 18px; }
+.auth-footer a, .auth-link {
+  color: var(--green); font-weight: 600; cursor: pointer; text-decoration: none;
+}
+.forgot-link {
+  font-size: 12.5px; font-weight: 600; color: var(--green);
+  cursor: pointer; text-align: right; display: block;
+  margin: -6px 0 18px;
+}
+
+/* ═══════════════════════════════════════
+   MODAL CONFIRMACION
+═══════════════════════════════════════ */
+#modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999; padding: 20px;
+}
+.modal-box {
+  background: var(--surface); border-radius: var(--radius-xl);
+  padding: 28px 24px; max-width: 340px; width: 100%;
+  text-align: center; box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+.modal-icon { font-size: 38px; margin-bottom: 10px; }
+.modal-msg {
+  white-space: pre-line; font-size: 14px;
+  color: var(--text2); line-height: 1.65; margin-bottom: 20px;
+}
+
+/* ═══════════════════════════════════════
+   BADGES / TAGS
+═══════════════════════════════════════ */
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 9px; border-radius: 99px;
+  font-size: 11px; font-weight: 700; letter-spacing: .4px;
+}
+.badge-green  { background: var(--green-light);  color: var(--green-dark); }
+.badge-gold   { background: var(--gold-light);   color: var(--gold); }
+.badge-blue   { background: var(--blue-light);   color: var(--blue); }
+.badge-red    { background: var(--red-light);    color: var(--red); }
+.badge-muted  { background: var(--surface2);     color: var(--text2); }
+
+/* Live badge */
+.live-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 99px;
+  background: var(--green-light); color: var(--green-dark);
+  font-size: 11px; font-weight: 700;
+}
+.live-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s ease infinite; }
+
+/* ═══════════════════════════════════════
+   PAGO
+═══════════════════════════════════════ */
+.pago-card-visual {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  border-radius: var(--radius-lg); padding: 22px;
+  color: #fff; margin-bottom: 20px;
+  position: relative; overflow: hidden; height: 140px;
+}
+.pago-card-visual::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 180px; height: 180px; border-radius: 50%;
+  background: rgba(255,255,255,.07);
+}
+.pago-card-num {
+  font-family: 'Sora', sans-serif; font-size: 20px;
+  letter-spacing: 3px; margin-top: 22px; opacity: .9;
+}
+.pago-card-hint {
+  position: absolute; bottom: 20px; left: 22px;
+  font-size: 10px; opacity: .65; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════
+   MODO OSCURO
+═══════════════════════════════════════ */
+body.dark {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #1a2744;
+  --surface3: #243252; --border: #2d3f5f; --border2: #3b5070;
+  --text: #f1f5f9; --text2: #94a3b8; --text3: #64748b;
+  --green-light: #052e16; --green-muted: #14532d;
+  --gold-light: #2d1f00; --blue-light: #0c1a3b;
+  --red-light: #2d0a0a;
+}
+body.dark .card { background: var(--surface); }
+body.dark .chat-box { background: var(--surface2); }
+body.dark .input-field, body.dark input, body.dark select { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+body.dark .plan-card { background: var(--surface); }
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media (max-width: 600px) {
+  #btn-hamburger { display: flex; }
+  .role-cards { grid-template-columns: 1fr; }
+  .input-row  { grid-template-columns: 1fr; }
+  .planes-grid { grid-template-columns: 1fr; }
+  .landing-hero { padding: 32px 16px 60px; }
+}
 </style>
 </head>
 <body>
 
-<header>
-  <h2>🥗 NutriTrack <span class="sync-badge" id="sync-badge" style="display:none">🔴 Sin Firebase</span></h2>
-  <div class="header-btns">
-    <button onclick="modoOscuro()">🌙</button>
+<!-- ═══════ TOPBAR ═══════ -->
+<header id="topbar">
+  <div id="topbar-logo" onclick="inicio()">
+    <div class="logo-mark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Z"/>
+        <path d="M12 8v8M8 12h8"/>
+      </svg>
+    </div>
+    <div class="logo-text-wrap">
+      <span class="logo-name">NutriTrack Pro</span>
+      <span class="logo-sub">Clinical Platform</span>
+    </div>
+  </div>
+
+  <div id="topbar-actions">
+    <div class="tb-badge" id="sync-badge" style="display:none">
+      <span class="dot"></span> En vivo
+    </div>
+    <button class="tb-btn" onclick="modoOscuro()" title="Modo oscuro">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-hamburger" onclick="toggleSidebar()" title="Menú">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
   </div>
 </header>
 
-<div class="container" id="app">
-</div>
-<!-- Loader global fijo, fuera de #app para que no sea destruido por app.innerHTML -->
-<div class="loading-overlay" id="loader-global" style="display:flex;">
+<!-- ═══════ SIDEBAR OVERLAY ═══════ -->
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<nav id="sidebar">
+  <!-- Se llena dinámicamente con buildSidebar() -->
+</nav>
+
+<!-- ═══════ LOADER GLOBAL ═══════ -->
+<div class="loading-overlay" id="loader-global" style="display:flex">
   <div class="spinner"></div>
-  <span>Iniciando NutriTrack...</span>
+  <span class="spinner-label">Iniciando NutriTrack Pro...</span>
 </div>
 
-<div class="nav">
-  <button onclick="inicio()">🏠</button>
-  <button onclick="ranking()">🏆</button>
-  <button onclick="reto()">🔥</button>
+<!-- ═══════ CONTENIDO ═══════ -->
+<div id="main-wrap">
+  <div class="container" id="app"></div>
 </div>
 
 <script>
-// ===== ESTADO GLOBAL =====
+/* ═══════════════════════════════════════
+   ESTADO GLOBAL (igual que original)
+═══════════════════════════════════════ */
 let pacienteActual = null
-let nutriActual = null
+let nutriActual    = null
 let planSeleccionado = null
-let _unsubscribePaciente = null   // listener tiempo real paciente
-let _unsubscribeNutri = null      // listener tiempo real dashboard nutri
+let _unsubscribePaciente = null
+let _unsubscribeNutri    = null
 let chatHistory = []
 
-// ===== ESPERAR A QUE FIREBASE ESTÉ LISTO =====
+/* ═══════════════════════════════════════
+   SIDEBAR — LÓGICA
+═══════════════════════════════════════ */
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar')
+  const ov = document.getElementById('sidebar-overlay')
+  if (sb.classList.contains('open')) { closeSidebar() }
+  else { sb.classList.add('open'); ov.classList.add('active') }
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open')
+  document.getElementById('sidebar-overlay').classList.remove('active')
+}
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open')
+  document.getElementById('sidebar-overlay').classList.add('active')
+}
+
+/* SVG icons helper */
+const ICONS = {
+  home:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>`,
+  users:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  clipboard: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>`,
+  bell:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+  trophy:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8,21 12,17 16,21"/><line x1="12" y1="17" x2="12" y2="13"/><path d="M5 5H3a2 2 0 0 0-2 2v2a6 6 0 0 0 6 6h10a6 6 0 0 0 6-6V7a2 2 0 0 0-2-2h-2"/><rect x="5" y="3" width="14" height="10" rx="2" ry="2"/></svg>`,
+  fire:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+  chart:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6"  y1="20" x2="6"  y2="14"/></svg>`,
+  star:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>`,
+  logout:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`,
+  person:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  ai:        `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>`,
+  food:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`,
+  back:      `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>`,
+  check:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`,
+}
+function icon(name) { return ICONS[name] || '' }
+
+/* Construir sidebar para NUTRICIONISTA */
+function buildSidebarNutri(activeSection) {
+  const plan = nutriActual?.plan || 'basico'
+  const planLabel = { basico:'Básico', estandar:'Estándar', premium:'Premium' }[plan] || plan
+  const planBadge = `<span class="sb-plan-badge ${plan}">${planLabel}</span>`
+  const initial = (nutriActual?.user || 'N')[0].toUpperCase()
+
+  document.getElementById('sidebar').innerHTML = `
+    <div class="sb-profile">
+      <div class="sb-avatar">${initial}</div>
+      <div>
+        <div class="sb-name">${nutriActual?.user || 'Nutricionista'}</div>
+        <div class="sb-role">Nutricionista</div>
+        ${planBadge}
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Principal</div>
+      <button class="sb-item ${activeSection==='dashboard'?'active':''}" onclick="dashboard();closeSidebar()">
+        ${icon('chart')} Dashboard
+      </button>
+      <button class="sb-item ${activeSection==='pacientes'?'active':''}" onclick="dashboard();closeSidebar()">
+        ${icon('users')} Mis pacientes
+      </button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Herramientas</div>
+      <button class="sb-item" onclick="closeSidebar()">
+        ${icon('clipboard')} Dietas semanales
+      </button>
+      <button class="sb-item" onclick="closeSidebar()">
+        ${icon('bell')} Notificaciones
+      </button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Reportes</div>
+      <button class="sb-item ${activeSection==='ranking'?'active':''}" onclick="ranking();closeSidebar()">
+        ${icon('trophy')} Ranking global
+      </button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Cuenta</div>
+      <button class="sb-item" onclick="verPrecios();closeSidebar()">
+        ${icon('star')} Ver planes
+      </button>
+      <button class="sb-item danger" onclick="cerrarSesion()">
+        ${icon('logout')} Cerrar sesión
+      </button>
+    </div>
+  `
+  // Mostrar hamburger y badge live
+  document.getElementById('btn-hamburger').style.display = 'flex'
+  document.getElementById('sync-badge').style.display = 'flex'
+}
+
+/* Construir sidebar para PACIENTE */
+function buildSidebarPaciente(activeSection) {
+  const plan = pacienteActual?.plan || 'basico'
+  const planLabel = { basico:'Básico', estandar:'Estándar', premium:'Premium' }[plan] || plan
+  const planBadge = `<span class="sb-plan-badge ${plan}">${planLabel}</span>`
+  const initial = (pacienteActual?.nombre || 'P')[0].toUpperCase()
+  const hasAI = ['estandar','premium'].includes(plan)
+
+  document.getElementById('sidebar').innerHTML = `
+    <div class="sb-profile">
+      <div class="sb-avatar">${initial}</div>
+      <div>
+        <div class="sb-name">${pacienteActual?.nombre || 'Paciente'}</div>
+        <div class="sb-role">Paciente</div>
+        ${planBadge}
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Mi día</div>
+      <button class="sb-item ${activeSection==='home'?'active':''}" onclick="panelPaciente();closeSidebar()">
+        ${icon('home')} Inicio
+      </button>
+      <button class="sb-item ${activeSection==='comidas'?'active':''}" onclick="panelPaciente();closeSidebar()">
+        ${icon('food')} Mis comidas
+      </button>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Progreso</div>
+      <button class="sb-item ${activeSection==='retos'?'active':''}" onclick="paginaRetos();closeSidebar()">
+        ${icon('fire')} Retos
+      </button>
+      <button class="sb-item ${activeSection==='ranking'?'active':''}" onclick="ranking();closeSidebar()">
+        ${icon('trophy')} Ranking
+      </button>
+      ${hasAI ? `
+      <button class="sb-item ${activeSection==='ai'?'active':''}" onclick="analisisProgreso();closeSidebar()">
+        ${icon('ai')} Análisis AI
+      </button>
+      <button class="sb-item" onclick="chatNutriAI();closeSidebar()">
+        ${icon('ai')} Chat AI
+      </button>` : ''}
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-section-label">Cuenta</div>
+      <button class="sb-item" onclick="verPrecios();closeSidebar()">
+        ${icon('star')} Ver planes
+      </button>
+      <button class="sb-item danger" onclick="cerrarSesion()">
+        ${icon('logout')} Cerrar sesión
+      </button>
+    </div>
+  `
+  document.getElementById('btn-hamburger').style.display = 'flex'
+  document.getElementById('sync-badge').style.display = 'flex'
+}
+
+/* Limpiar sidebar (pantalla de inicio/login) */
+function clearSidebar() {
+  document.getElementById('sidebar').innerHTML = ''
+  document.getElementById('btn-hamburger').style.display = 'none'
+  document.getElementById('sync-badge').style.display = 'none'
+  closeSidebar()
+}
+
+/* Cerrar sesión genérico */
+function cerrarSesion() {
+  limpiarListeners()
+  pacienteActual = null
+  nutriActual = null
+  clearSidebar()
+  inicio()
+}
+
+/* ═══════════════════════════════════════
+   FIREBASE & UTILS (igual que original)
+═══════════════════════════════════════ */
 function esperarDB() {
   return new Promise(resolve => {
     if (window._dbReady) { resolve(); return; }
-    const timeout = setTimeout(() => {
-      console.warn("Firebase tardó demasiado, arrancando sin esperar.");
-      resolve();
-    }, 4000); // máximo 4 segundos de espera
-    window.addEventListener('dbReady', () => {
-      clearTimeout(timeout);
-      resolve();
-    }, { once: true });
-  });
-}
-
-// ===== LOADER =====
-function mostrarLoader(msg = "Cargando...") {
-  // Usar siempre el loader fijo del body (nunca dentro de #app que se destruye)
-  let l = document.getElementById("loader-global")
-  if (!l) {
-    l = document.createElement("div")
-    l.id = "loader-global"
-    l.className = "loading-overlay"
-    document.body.appendChild(l)
-  }
-  l.innerHTML = `<div class="spinner"></div><span>${msg}</span>`
-  l.style.display = "flex"
-}
-function ocultarLoader() {
-  // Ocultar todos los posibles loaders
-  ["loading-inicial","loading-temporal","loader-global"].forEach(id => {
-    let el = document.getElementById(id)
-    if (el) el.style.display = "none"
+    const timeout = setTimeout(() => resolve(), 4000)
+    window.addEventListener('dbReady', () => { clearTimeout(timeout); resolve() }, { once: true })
   })
 }
 
-// ===== LIMPIAR LISTENERS ANTERIORES =====
-function limpiarListeners() {
-  if (_unsubscribePaciente) { _unsubscribePaciente(); _unsubscribePaciente = null }
-  if (_unsubscribeNutri) { _unsubscribeNutri(); _unsubscribeNutri = null }
+function mostrarLoader(msg = 'Cargando...') {
+  let l = document.getElementById('loader-global')
+  if (!l) { l = document.createElement('div'); l.id = 'loader-global'; l.className = 'loading-overlay'; document.body.appendChild(l) }
+  l.innerHTML = `<div class="spinner"></div><span class="spinner-label">${msg}</span>`
+  l.style.display = 'flex'
+}
+function ocultarLoader() {
+  ['loading-inicial','loading-temporal','loader-global'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none'
+  })
 }
 
-// ===== UTILS =====
+function limpiarListeners() {
+  if (_unsubscribePaciente) { _unsubscribePaciente(); _unsubscribePaciente = null }
+  if (_unsubscribeNutri)    { _unsubscribeNutri();    _unsubscribeNutri    = null }
+}
+
 function calcularCalorias(peso, altura, edad, objetivo) {
   peso = parseFloat(peso); altura = parseFloat(altura); edad = parseFloat(edad)
   let base = (peso * 10) + (altura * 6.25) - (edad * 5) + 5
-  if (objetivo == "Bajar peso") base -= 400
-  if (objetivo == "Subir peso") base += 400
+  if (objetivo == 'Bajar peso') base -= 400
+  if (objetivo == 'Subir peso') base += 400
   return Math.round(base)
 }
 
@@ -243,54 +966,60 @@ function formatearFecha(input) {
   if (valor.length > 4) valor = valor.slice(0, 4)
   if (valor.length >= 2) {
     let mes = parseInt(valor.slice(0, 2))
-    if (mes < 1) mes = 1
-    if (mes > 12) mes = 12
+    if (mes < 1) mes = 1; if (mes > 12) mes = 12
     valor = mes.toString().padStart(2, '0') + valor.slice(2)
   }
-  if (valor.length >= 4) input.value = valor.slice(0, 2) + "/" + valor.slice(2)
+  if (valor.length >= 4) input.value = valor.slice(0, 2) + '/' + valor.slice(2)
   else input.value = valor
 }
 
 function diaActual() {
-  let dias = ["domingo","lunes","martes","miercoles","jueves","viernes","sabado"]
-  return dias[new Date().getDay()]
+  return ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'][new Date().getDay()]
 }
 
 function barraRacha() {
-  let html = ""
+  let html = '<div style="display:flex;gap:5px;margin-top:4px">'
   for (let i = 1; i <= 7; i++) {
-    if (i <= pacienteActual.racha) html += "🔥 "
-    else html += "⬜ "
+    html += i <= pacienteActual.racha
+      ? `<div style="width:26px;height:26px;border-radius:6px;background:var(--green);display:flex;align-items:center;justify-content:center;">${icon('fire').replace('currentColor','white')}</div>`
+      : `<div style="width:26px;height:26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border)"></div>`
   }
-  return html
+  return html + '</div>'
 }
 
-// ===== PLANES =====
+function tieneAI() {
+  return ['estandar','premium'].includes(pacienteActual?.plan)
+}
+
+/* ═══════════════════════════════════════
+   PLANES
+═══════════════════════════════════════ */
 const PLANES = {
-  basico: {nombre:"Básico",precio:18,pacientes:"1 a 20",funciones:"básicas",color:"basico"},
-  estandar: {nombre:"Estándar",precio:31,pacientes:"1 a 40",funciones:"básicas + AI",color:"estandar",popular:true},
-  premium: {nombre:"Premium",precio:56,pacientes:"1 a 80",funciones:"avanzadas + AI + Dashboards",color:"premium",extraFeatures:["Dashboard de pacientes para nutricionista"]}
+  basico:   { nombre:'Básico',   precio:18, pacientes:'1 a 20', funciones:'básicas',               color:'basico'  },
+  estandar: { nombre:'Estándar', precio:31, pacientes:'1 a 40', funciones:'básicas + AI',          color:'estandar', popular:true },
+  premium:  { nombre:'Premium',  precio:56, pacientes:'1 a 80', funciones:'avanzadas + AI + Dash', color:'premium',
+              extraFeatures:['Dashboard analítico en tiempo real'] }
 }
 
 function renderPlanes(modo, origen) {
-  return `
-  <div class="planes-grid">
+  return `<div class="planes-grid">
     ${Object.entries(PLANES).map(([key,p]) => `
-    <div class="plan-card ${planSeleccionado==key?'selected':''}" id="plancard-${key}" onclick="elegirPlan('${key}','${modo}','${origen}')">
-      <div class="check-selected">✓</div>
-      <div class="plan-tag">Tu primer mes GRATIS</div>
+    <div class="plan-card ${planSeleccionado==key?'selected':''}" id="plancard-${key}"
+         onclick="elegirPlan('${key}','${modo}','${origen}')">
+      <div class="check-selected">${icon('check')}</div>
+      <div class="plan-tag">Primer mes GRATIS</div>
       <div class="plan-body">
-        <p class="plan-nombre">${p.nombre}${p.popular?'<span class="plan-popular">Más popular</span>':''}</p>
+        <p class="plan-nombre">${p.nombre}${p.popular?'<span class="plan-popular">Popular</span>':''}</p>
         <ul class="plan-features">
-          <li>+30,000 recetas y plantillas.</li>
-          <li>De ${p.pacientes} pacientes.</li>
-          <li>Funciones <b>${p.funciones}</b>.</li>
-          ${p.extraFeatures ? p.extraFeatures.map(f=>`<li>${f}</li>`).join("") : ""}
+          <li>+30,000 recetas y plantillas</li>
+          <li>De ${p.pacientes} pacientes</li>
+          <li>Funciones <b>${p.funciones}</b></li>
+          ${p.extraFeatures ? p.extraFeatures.map(f=>`<li>${f}</li>`).join('') : ''}
         </ul>
-        <div class="plan-precio">$${p.precio} <span>usd</span>/mes</div>
-        <div class="plan-sub">*Pago mensual</div>
-        <button class="btn-plan btn-plan-${p.color}" style="width:100%">
-          ${planSeleccionado==key?'✓ Seleccionado':'Probar Gratis'}
+        <div class="plan-precio">$${p.precio}<span> usd/mes</span></div>
+        <div class="plan-sub">*Pago mensual recurrente</div>
+        <button class="btn-plan btn-plan-${p.color}">
+          ${planSeleccionado==key?'Seleccionado':'Comenzar gratis'}
         </button>
       </div>
     </div>`).join('')}
@@ -300,9 +1029,8 @@ function renderPlanes(modo, origen) {
 function elegirPlan(key, modo, origen) {
   planSeleccionado = key
   if (modo == 'preview') {
-    if (document.getElementById("seccion-planes")) {
-      document.getElementById("seccion-planes").innerHTML = renderPlanes(modo, origen)
-    }
+    const s = document.getElementById('seccion-planes')
+    if (s) s.innerHTML = renderPlanes(modo, origen)
     return
   }
   pantallaPago(modo, origen)
@@ -312,484 +1040,554 @@ function verPrecios() {
   planSeleccionado = null
   app.innerHTML = `
   <div class="card">
-    <button onclick="inicio()">⬅ Volver</button>
-    <h2 style="text-align:center">💰 Nuestros Planes</h2>
-    <p style="text-align:center;color:#666">Elige el plan que mejor se adapte a ti</p>
+    <button class="btn btn-ghost" onclick="inicio()" style="margin-bottom:16px">
+      ${icon('back')} Volver
+    </button>
+    <div class="card-header">
+      <div>
+        <div class="card-title">Planes y precios</div>
+        <div class="card-subtitle">Tu primer mes es completamente gratis en cualquier plan</div>
+      </div>
+    </div>
     <div id="seccion-planes">${renderPlanes('preview','preview')}</div>
   </div>`
 }
 
-// ===== INICIO =====
+/* ═══════════════════════════════════════
+   INICIO — pantalla de bienvenida
+═══════════════════════════════════════ */
 function inicio() {
   limpiarListeners()
+  clearSidebar()
+
   app.innerHTML = `
-  <div class="card" style="text-align:center;">
-    <h2>Bienvenido a NutriTrack 🥗</h2>
-    <p style="color:#666">Tu asistente de nutrición inteligente</p>
-    <p style="font-size:12px;color:#4CAF50;font-weight:700;">🔴 Sincronización en tiempo real con Firebase</p>
-    <button onclick="loginNutri()">👨‍⚕️ Soy Nutricionista</button>
-    <button onclick="loginPaciente()">🙋 Soy Paciente</button>
-    <hr style="margin:20px 0;border-color:#eee;">
-    <p style="font-size:13px;color:#aaa">¿Quieres conocer nuestros planes? <span style="color:#4CAF50;cursor:pointer;font-weight:700;" onclick="verPrecios()">Ver precios →</span></p>
+  <div class="landing-hero">
+    <div class="landing-eyebrow">
+      <span class="dot" style="width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 2s ease infinite;display:inline-block"></span>
+      Sincronización en tiempo real
+    </div>
+    <h1 class="landing-title">
+      Nutrición clínica<br><span>inteligente</span>
+    </h1>
+    <p class="landing-subtitle">
+      Plataforma profesional para nutricionistas y pacientes. Seguimiento en tiempo real, dietas personalizadas e inteligencia artificial.
+    </p>
+    <div class="landing-cta" style="margin-bottom:40px">
+      <button class="btn btn-primary btn-lg" onclick="loginNutri()">
+        ${icon('person')} Soy Nutricionista
+      </button>
+      <button class="btn btn-secondary btn-lg" onclick="loginPaciente()">
+        ${icon('person')} Soy Paciente
+      </button>
+    </div>
+    <div class="role-cards">
+      <div class="role-card" onclick="loginNutri()">
+        <div class="role-icon green">${icon('users')}</div>
+        <div class="role-title">Nutricionista</div>
+        <p class="role-desc">Gestiona pacientes, crea dietas y monitorea el progreso en tiempo real.</p>
+        <div class="role-link">Ingresar ${icon('back').replace('polyline points="15,18 9,12 15,6"','polyline points="9,18 15,12 9,6"')}</div>
+      </div>
+      <div class="role-card" onclick="loginPaciente()">
+        <div class="role-icon gold">${icon('home')}</div>
+        <div class="role-title">Paciente</div>
+        <p class="role-desc">Sigue tu dieta, registra comidas y consulta a tu nutricionista con IA.</p>
+        <div class="role-link">Ingresar ${icon('back').replace('polyline points="15,18 9,12 15,6"','polyline points="9,18 15,12 9,6"')}</div>
+      </div>
+    </div>
+    <div class="landing-stats">
+      <div style="text-align:center">
+        <div class="stat-val">30K+</div>
+        <div class="stat-lbl">Recetas</div>
+      </div>
+      <div style="text-align:center">
+        <div class="stat-val">100%</div>
+        <div class="stat-lbl">En la nube</div>
+      </div>
+      <div style="text-align:center">
+        <div class="stat-val">AI</div>
+        <div class="stat-lbl">Integrado</div>
+      </div>
+    </div>
+    <p style="margin-top:24px;font-size:13px;color:var(--text3)">
+      ¿Quieres conocer nuestros planes?
+      <span style="color:var(--green);font-weight:600;cursor:pointer" onclick="verPrecios()"> Ver precios →</span>
+    </p>
   </div>`
 }
 
-// ===== LOGIN NUTRICIONISTA =====
+/* ═══════════════════════════════════════
+   LOGIN NUTRICIONISTA
+═══════════════════════════════════════ */
 function loginNutri() {
   limpiarListeners()
+  clearSidebar()
   app.innerHTML = `
-  <div class="card" style="max-width:400px;margin:40px auto;">
-    <button onclick="inicio()" style="background:none;color:#888;font-size:13px;padding:0;margin-bottom:16px;">⬅ Volver</button>
-    <h2 style="text-align:center;margin-bottom:4px;">👨‍⚕️ Nutricionista</h2>
-    <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:20px;">Inicia sesión en tu cuenta</p>
-    <input id="userNutri" placeholder="Usuario" style="width:100%;margin-bottom:10px;">
-    <input id="passNutri" type="password" placeholder="Contraseña" style="width:100%;margin-bottom:6px;">
-    <p style="text-align:right;margin:0 0 16px;"><span style="cursor:pointer;color:#4CAF50;font-size:13px;" onclick="olvidePass('nutricionista')">¿Olvidaste tu contraseña?</span></p>
-    <button onclick="entrarNutri()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Iniciar sesión</button>
-    <hr style="margin:20px 0;border-color:#eee;">
-    <p style="text-align:center;font-size:14px;color:#888;margin:0;">¿No tienes cuenta? <span style="color:#4CAF50;font-weight:700;cursor:pointer;" onclick="registroNutri()">Regístrate aquí</span></p>
+  <div class="auth-wrap">
+    <button class="auth-back" onclick="inicio()">${icon('back')} Volver</button>
+    <h2 class="auth-title">Bienvenido de vuelta</h2>
+    <p class="auth-sub">Inicia sesión en tu cuenta de nutricionista</p>
+
+    <div class="input-group">
+      <label class="input-label">Usuario</label>
+      <input id="userNutri" placeholder="Tu nombre de usuario" type="text">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Contraseña</label>
+      <input id="passNutri" type="password" placeholder="••••••••">
+    </div>
+    <span class="forgot-link" onclick="olvidePass('nutricionista')">¿Olvidaste tu contraseña?</span>
+
+    <button class="btn btn-primary btn-full btn-lg" onclick="entrarNutri()">
+      Iniciar sesión
+    </button>
+
+    <div class="auth-divider">o</div>
+    <div class="auth-footer">
+      ¿No tienes cuenta?
+      <span class="auth-link" onclick="registroNutri()">Regístrate aquí</span>
+    </div>
   </div>`
 }
 
 function registroNutri() {
   app.innerHTML = `
-  <div class="card" style="max-width:400px;margin:40px auto;">
-    <button onclick="loginNutri()" style="background:none;color:#888;font-size:13px;padding:0;margin-bottom:16px;">⬅ Volver al login</button>
-    <h2 style="text-align:center;margin-bottom:4px;">📝 Crear cuenta</h2>
-    <p style="text-align:center;color:#aaa;font-size:13px;margin-bottom:20px;">Regístrate como nutricionista</p>
-    <input id="nuevoUserNutri" placeholder="Usuario" style="width:100%;margin-bottom:10px;">
-    <input id="nuevoPassNutri" type="password" placeholder="Contraseña" style="width:100%;margin-bottom:16px;">
-    <button onclick="registrarNutri()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Crear cuenta</button>
-    <hr style="margin:20px 0;border-color:#eee;">
-    <p style="text-align:center;font-size:14px;color:#888;margin:0;">¿Ya tienes cuenta? <span style="color:#4CAF50;font-weight:700;cursor:pointer;" onclick="loginNutri()">Inicia sesión</span></p>
+  <div class="auth-wrap">
+    <button class="auth-back" onclick="loginNutri()">${icon('back')} Volver al login</button>
+    <h2 class="auth-title">Crear cuenta</h2>
+    <p class="auth-sub">Regístrate como nutricionista profesional</p>
+
+    <div class="input-group">
+      <label class="input-label">Usuario</label>
+      <input id="nuevoUserNutri" placeholder="Elige un nombre de usuario" type="text">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Contraseña</label>
+      <input id="nuevoPassNutri" type="password" placeholder="Mínimo 6 caracteres">
+    </div>
+
+    <button class="btn btn-primary btn-full btn-lg" onclick="registrarNutri()">
+      Crear cuenta
+    </button>
+
+    <div class="auth-divider">o</div>
+    <div class="auth-footer">
+      ¿Ya tienes cuenta?
+      <span class="auth-link" onclick="loginNutri()">Inicia sesión</span>
+    </div>
   </div>`
 }
 
 async function registrarNutri() {
-  let u = document.getElementById("nuevoUserNutri").value.trim()
-  let p = document.getElementById("nuevoPassNutri").value
-  if (!u || !p) { alert("Completa todos los campos"); return }
-  mostrarLoader("Verificando usuario...")
+  let u = document.getElementById('nuevoUserNutri').value.trim()
+  let p = document.getElementById('nuevoPassNutri').value
+  if (!u || !p) { alert('Completa todos los campos'); return }
+  mostrarLoader('Verificando usuario...')
   const existe = await window._db.getNutri(u)
-  if (existe) { ocultarLoader(); alert("Este usuario ya existe ❌"); return }
+  if (existe) { ocultarLoader(); alert('Este usuario ya existe'); return }
   ocultarLoader()
   window._tempNutri = { user: u, pass: p }
-  pantallaPlanYPago("nutricionista", "registro")
+  pantallaPlanYPago('nutricionista', 'registro')
 }
 
 async function entrarNutri() {
-  let u = document.getElementById("userNutri").value.trim()
-  let p = document.getElementById("passNutri").value
-  if (!u || !p) { alert("Completa todos los campos"); return }
-  if (!window._dbReady) { mostrarLoader("Conectando con Firebase..."); await esperarDB() }
-  mostrarLoader("Verificando...")
+  let u = document.getElementById('userNutri').value.trim()
+  let p = document.getElementById('passNutri').value
+  if (!u || !p) { alert('Completa todos los campos'); return }
+  if (!window._dbReady) { mostrarLoader('Conectando con Firebase...'); await esperarDB() }
+  mostrarLoader('Verificando credenciales...')
   try {
     const nutri = await window._db.getNutri(u)
     ocultarLoader()
-    if (!nutri || nutri.pass !== p) { alert("Credenciales incorrectas ❌"); return }
+    if (!nutri || nutri.pass !== p) { alert('Credenciales incorrectas'); return }
     nutriActual = nutri
     dashboard()
   } catch(err) {
     ocultarLoader()
-    console.error("Error al iniciar sesión:", err)
-    alert("Error de conexión con Firebase ❌ Revisa tu internet e inténtalo de nuevo.")
+    alert('Error de conexión. Revisa tu internet e inténtalo de nuevo.')
   }
 }
 
-// ===== DASHBOARD NUTRICIONISTA (con tiempo real) =====
+/* ═══════════════════════════════════════
+   LOGIN PACIENTE
+═══════════════════════════════════════ */
+function loginPaciente() {
+  limpiarListeners()
+  clearSidebar()
+  app.innerHTML = `
+  <div class="auth-wrap">
+    <button class="auth-back" onclick="inicio()">${icon('back')} Volver</button>
+    <h2 class="auth-title">Acceso de paciente</h2>
+    <p class="auth-sub">Ingresa con las credenciales que te dio tu nutricionista</p>
+
+    <div class="input-group">
+      <label class="input-label">Usuario</label>
+      <input id="userPaciente" placeholder="Tu nombre de usuario" type="text">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Contraseña</label>
+      <input id="passPaciente" type="password" placeholder="••••••••">
+    </div>
+    <span class="forgot-link" onclick="olvidePass('paciente')">¿Olvidaste tu contraseña?</span>
+
+    <button class="btn btn-primary btn-full btn-lg" onclick="entrarPaciente()">
+      Ingresar
+    </button>
+  </div>`
+}
+
+function olvidePass(tipo) {
+  app.innerHTML = `
+  <div class="auth-wrap">
+    <button class="auth-back" onclick="inicio()">${icon('back')} Volver</button>
+    <h2 class="auth-title">Recuperar contraseña</h2>
+    <p class="auth-sub">Ingresa tu usuario y define una nueva contraseña</p>
+
+    <div class="input-group">
+      <label class="input-label">Usuario</label>
+      <input id="userRecuperar" placeholder="Tu usuario" type="text">
+    </div>
+    <div class="input-group">
+      <label class="input-label">Nueva contraseña</label>
+      <input id="nuevaPass" type="password" placeholder="Nueva contraseña">
+    </div>
+    <button class="btn btn-primary btn-full btn-lg" onclick="cambiarPassword('${tipo}')">
+      Actualizar contraseña
+    </button>
+  </div>`
+}
+
+async function cambiarPassword(tipo) {
+  let user = document.getElementById('userRecuperar').value.trim()
+  let nueva = document.getElementById('nuevaPass').value
+  if (!user || !nueva) { alert('Completa todos los campos'); return }
+  mostrarLoader('Actualizando...')
+  if (tipo == 'paciente') {
+    let p = await window._db.getPaciente(user)
+    if (!p) { ocultarLoader(); alert('Usuario no encontrado'); return }
+    p.password = nueva; await window._db.guardarPaciente(p)
+  } else {
+    let n = await window._db.getNutri(user)
+    if (!n) { ocultarLoader(); alert('Usuario no encontrado'); return }
+    n.pass = nueva; await window._db.guardarNutri(n)
+  }
+  ocultarLoader()
+  alert('Contraseña actualizada correctamente')
+  if (tipo == 'paciente') loginPaciente(); else loginNutri()
+}
+
+async function entrarPaciente() {
+  let u = document.getElementById('userPaciente').value.trim()
+  let p = document.getElementById('passPaciente').value
+  if (!window._dbReady) { mostrarLoader('Conectando con Firebase...'); await esperarDB() }
+  mostrarLoader('Verificando...')
+  const pac = await window._db.getPaciente(u)
+  ocultarLoader()
+  if (!pac || pac.password !== p) { alert('Credenciales incorrectas'); return }
+  pacienteActual = pac
+  panelPaciente()
+}
+
+/* ═══════════════════════════════════════
+   DASHBOARD NUTRICIONISTA
+═══════════════════════════════════════ */
 async function dashboard() {
   limpiarListeners()
-  mostrarLoader("Cargando dashboard...")
-
-  // Primera carga
+  mostrarLoader('Cargando dashboard...')
   try {
     let misPacientes = await window._db.getPacientesDeNutri(nutriActual.user)
     ocultarLoader()
+    buildSidebarNutri('dashboard')
     renderDashboardCompleto(misPacientes)
   } catch(err) {
-    ocultarLoader()
-    console.error("Error cargando dashboard:", err)
-    alert("Error al cargar el dashboard ❌ Revisa tu conexión.")
-    return
+    ocultarLoader(); alert('Error al cargar el dashboard. Revisa tu conexión.'); return
   }
-
-  // Escuchar cambios en tiempo real
   _unsubscribeNutri = window._db.escucharPacientesNutri(nutriActual.user, (pacientes) => {
     renderDashboardCompleto(pacientes)
   })
 }
 
 function renderDashboardCompleto(misPacientes) {
-  let lista = ""
+  let lista = ''
   misPacientes.forEach(p => {
     lista += `
-    <div class="card">
-      <b>${p.nombre}</b> <span style="font-size:12px;color:#888;background:#f0f0f0;padding:2px 8px;border-radius:10px;">${p.plan||'básico'}</span><br>
-      ${p.fecha === new Date().toDateString() ? p.progreso + '% hoy' : '0% hoy (sin actividad)' }<br>
-      <button onclick="crearDietaSemanal('${p.usuario}')">Dieta semanal</button>
-      <button onclick="verNotificaciones('${p.usuario}')">Notificaciones</button>
-      <button onclick="verPaciente('${p.usuario}')">Ver</button>
+    <div class="card" style="margin-top:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <b style="font-size:15px">${p.nombre}</b>
+          <span class="badge badge-${p.plan=='premium'?'green':p.plan=='estandar'?'gold':'muted'}" style="margin-left:8px">${p.plan||'básico'}</span><br>
+          <span style="font-size:12px;color:var(--text3)">${p.fecha === new Date().toDateString() ? p.progreso + '% completado hoy' : 'Sin actividad hoy'}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-secondary btn-sm" onclick="crearDietaSemanal('${p.usuario}')">${icon('clipboard')} Dieta</button>
+          <button class="btn btn-secondary btn-sm" onclick="verNotificaciones('${p.usuario}')">${icon('bell')}</button>
+          <button class="btn btn-secondary btn-sm" onclick="verPaciente('${p.usuario}')">${icon('person')} Ver</button>
+        </div>
+      </div>
+      <div class="progress" style="margin-top:10px">
+        <div class="bar" style="width:${p.fecha===new Date().toDateString()?p.progreso:0}%">
+          ${p.fecha===new Date().toDateString()&&p.progreso>15?p.progreso+'%':''}
+        </div>
+      </div>
     </div>`
   })
 
-  let dashboardPremium = ""
-  if (nutriActual.plan == "premium") {
-    dashboardPremium = `<div class="card" id="card-dashboard-nutri">
-      <h2>📊 Dashboard Premium <span style="font-size:12px;color:#4CAF50;font-weight:700;">🔴 En vivo</span></h2>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
-        <div style="flex:1;min-width:120px;background:#e8f5e9;border-radius:10px;padding:14px;text-align:center;">
-          <div style="font-size:28px;font-weight:900;color:#2e7d32">${misPacientes.length}</div>
-          <div style="font-size:12px;color:#666">Pacientes</div>
+  let dashboardPremium = ''
+  if (nutriActual.plan == 'premium') {
+    const total = misPacientes.length
+    const avg   = total ? Math.round(misPacientes.reduce((a,p)=>a+(p.progreso||0),0)/total) : 0
+    const racha = total ? Math.max(...misPacientes.map(p=>p.racha||0)) : 0
+    dashboardPremium = `
+    <div class="card" id="card-dashboard-nutri">
+      <div class="card-header">
+        <div class="card-title">Dashboard Premium</div>
+        <span class="live-badge"><span class="dot"></span>En vivo</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div style="background:var(--green-light);border-radius:var(--radius);padding:14px;text-align:center">
+          <div style="font-size:26px;font-weight:800;color:var(--green-dark)">${total}</div>
+          <div style="font-size:11px;color:var(--text2)">Pacientes</div>
         </div>
-        <div style="flex:1;min-width:120px;background:#e3f2fd;border-radius:10px;padding:14px;text-align:center;">
-          <div style="font-size:28px;font-weight:900;color:#1565c0">${misPacientes.length ? Math.round(misPacientes.reduce((a,p)=>a+(p.progreso||0),0)/misPacientes.length) : 0}%</div>
-          <div style="font-size:12px;color:#666">Promedio progreso</div>
+        <div style="background:var(--blue-light);border-radius:var(--radius);padding:14px;text-align:center">
+          <div style="font-size:26px;font-weight:800;color:var(--blue)">${avg}%</div>
+          <div style="font-size:11px;color:var(--text2)">Promedio</div>
         </div>
-        <div style="flex:1;min-width:120px;background:#fff8e1;border-radius:10px;padding:14px;text-align:center;">
-          <div style="font-size:28px;font-weight:900;color:#f57f17">${misPacientes.length ? Math.max(...misPacientes.map(p=>p.racha||0)) : 0}🔥</div>
-          <div style="font-size:12px;color:#666">Mejor racha</div>
+        <div style="background:var(--gold-light);border-radius:var(--radius);padding:14px;text-align:center">
+          <div style="font-size:26px;font-weight:800;color:var(--gold)">${racha}</div>
+          <div style="font-size:11px;color:var(--text2)">Mejor racha</div>
         </div>
       </div>
       <canvas id="grafica-nutri" height="170"></canvas>
-      <h4 style="margin:16px 0 8px">🏅 Mejores rachas</h4>
-      <div id="mejores-rachas"></div>
-      <h4 style="margin:16px 0 8px">⚠️ Necesitan atención</h4>
-      <div id="peores-rachas"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Mejores rachas</div>
+          <div id="mejores-rachas"></div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Necesitan atención</div>
+          <div id="peores-rachas"></div>
+        </div>
+      </div>
     </div>`
   }
 
   app.innerHTML = `
   ${dashboardPremium}
-  <div class="card"><h2>Dashboard Nutricionista 👨‍⚕️</h2></div>
   <div class="card">
-    <h3>Crear paciente</h3>
-    <input id="nombre" placeholder="Nombre">
-    <input id="usuario" placeholder="Usuario">
-    <input id="password" placeholder="Password">
-    <input id="edad" placeholder="Edad">
-    <input id="peso" placeholder="Peso">
-    <input id="altura" placeholder="Altura">
-    <select id="objetivo">
-      <option>Bajar peso</option>
-      <option>Mantener</option>
-      <option>Subir peso</option>
-    </select>
-    <button onclick="crearPaciente()">Crear</button>
+    <div class="card-header">
+      <div>
+        <div class="card-title">Panel Nutricionista</div>
+        <div class="card-subtitle">Gestiona tus pacientes y sus planes de alimentación</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="input-group">
+        <label class="input-label">Nombre</label>
+        <input id="nombre" placeholder="Nombre completo">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Usuario</label>
+        <input id="usuario" placeholder="usuario123">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Contraseña</label>
+        <input id="password" type="password" placeholder="••••••">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Edad</label>
+        <input id="edad" placeholder="Años" type="number">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Peso (kg)</label>
+        <input id="peso" placeholder="kg" type="number">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Altura (cm)</label>
+        <input id="altura" placeholder="cm" type="number">
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Objetivo</label>
+      <select id="objetivo">
+        <option>Bajar peso</option>
+        <option>Mantener</option>
+        <option>Subir peso</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="crearPaciente()">${icon('person')} Crear paciente</button>
   </div>
-  ${lista}`
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Mis pacientes</div>
+      <span class="badge badge-muted">${misPacientes.length} total</span>
+    </div>
+    ${lista || '<p style="color:var(--text3);font-size:13px;text-align:center;padding:20px 0">Aún no tienes pacientes registrados</p>'}
+  </div>`
 
-  if (nutriActual.plan == "premium") setTimeout(() => renderDashboardNutri(misPacientes), 50)
+  if (nutriActual.plan == 'premium') setTimeout(() => renderDashboardNutri(misPacientes), 50)
 }
 
 function renderDashboardNutri(misPacientes) {
-  let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
+  let dias = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo']
   let labels = dias.map(d => d.charAt(0).toUpperCase() + d.slice(1, 3))
-
-  // Calcular el Date de cada día de la semana actual
   function getFechaParaDia(nombreDia) {
     const mapa = {lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6,domingo:0}
-    let hoy = new Date()
-    let diaHoy = hoy.getDay() // 0=domingo
-    let diff = mapa[nombreDia] - diaHoy
-    let fecha = new Date(hoy)
-    fecha.setDate(hoy.getDate() + diff)
-    return fecha.toDateString() // mismo formato que historialComidas
+    let hoy = new Date(), diff = mapa[nombreDia] - hoy.getDay()
+    let fecha = new Date(hoy); fecha.setDate(hoy.getDate() + diff)
+    return fecha.toDateString()
   }
-
   let data = dias.map(dia => {
-    let fechaDia = getFechaParaDia(dia)
-    let cumplieron = 0, conDieta = 0
+    let fechaDia = getFechaParaDia(dia), cumplieron = 0, conDieta = 0
     misPacientes.forEach(p => {
       let dieta = p.dietasemanal?.[dia]
-      if (!dieta || !Object.values(dieta).some(v => v)) return // sin dieta asignada ese día
+      if (!dieta || !Object.values(dieta).some(v => v)) return
       conDieta++
-      // Buscar en el historial si ese día específico tuvo 5 comidas
       let entrada = (p.historialComidas || []).find(h => h.fecha === fechaDia)
       if (entrada && entrada.comidas && entrada.comidas.length >= 5) cumplieron++
     })
     return conDieta > 0 ? Math.round((cumplieron / conDieta) * 100) : 0
   })
-
-  let ctx = document.getElementById("grafica-nutri")
+  let ctx = document.getElementById('grafica-nutri')
   if (!ctx) return
   if (window._chartNutri) window._chartNutri.destroy()
   window._chartNutri = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "% cumplimiento pacientes",
-        data,
-        backgroundColor: data.map(v => v>=70?"rgba(76,175,80,0.75)":v>=40?"rgba(255,167,38,0.75)":"rgba(239,83,80,0.75)"),
-        borderRadius: 8, borderSkipped: false
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { labels: { font: { family: "Nunito" }, color: "#555" } } },
-      scales: {
-        y: { beginAtZero:true, max:100, ticks:{color:"#888",font:{family:"Nunito"},callback:v=>v+"%"}, grid:{color:"#f0f0f0"} },
-        x: { ticks:{color:"#888",font:{family:"Nunito"}}, grid:{display:false} }
-      }
-    }
+    type: 'bar',
+    data: { labels, datasets: [{ label:'% cumplimiento', data, backgroundColor: data.map(v=>v>=70?'rgba(22,163,74,.75)':v>=40?'rgba(217,119,6,.75)':'rgba(220,38,38,.75)'), borderRadius:8, borderSkipped:false }] },
+    options: { responsive:true, plugins:{legend:{labels:{font:{family:'Inter'},color:'#64748b'}}}, scales:{ y:{beginAtZero:true,max:100,ticks:{color:'#94a3b8',font:{family:'Inter'},callback:v=>v+'%'},grid:{color:'#f1f5f9'}}, x:{ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{display:false}} } }
   })
-
-  let sorted = [...misPacientes].sort((a,b) => (b.racha||0)-(a.racha||0))
-  let mejores = sorted.slice(0, 3)
-  let peores = sorted.slice(-3).reverse().filter(p => (p.racha||0) < 3)
-  let medals = ["🥇","🥈","🥉"]
-
-  let mejoresDiv = document.getElementById("mejores-rachas")
-  let peoresDiv = document.getElementById("peores-rachas")
-  if (!mejoresDiv || !peoresDiv) return
-
-  mejoresDiv.innerHTML = mejores.map((p,i) => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:#f9f9f9;margin-bottom:6px;">
+  let sorted = [...misPacientes].sort((a,b)=>(b.racha||0)-(a.racha||0))
+  let medals = ['🥇','🥈','🥉']
+  let mejoresDiv = document.getElementById('mejores-rachas')
+  let peoresDiv  = document.getElementById('peores-rachas')
+  if (!mejoresDiv||!peoresDiv) return
+  mejoresDiv.innerHTML = sorted.slice(0,3).map((p,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:var(--surface2);margin-bottom:5px;font-size:13px">
       <span>${medals[i]} <b>${p.nombre}</b></span>
-      <span style="background:#FF7043;color:white;border-radius:12px;padding:2px 10px;font-size:13px;">${p.racha||0} 🔥 días</span>
-    </div>`).join("") || "<p style='color:#aaa;font-size:13px'>Sin datos aún.</p>"
-
-  peoresDiv.innerHTML = peores.length ? peores.map(p => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:#fff8f8;margin-bottom:6px;border-left:3px solid #EF5350;">
-      <span>⚠️ <b>${p.nombre}</b></span>
-      <span style="background:#EF5350;color:white;border-radius:12px;padding:2px 10px;font-size:13px;">${p.racha||0} días racha</span>
-    </div>`).join("") : "<p style='color:#aaa;font-size:13px'>¡Todos van bien! 🎉</p>"
+      <span class="badge badge-green">${p.racha||0} días</span>
+    </div>`).join('') || "<p style='color:var(--text3);font-size:12px'>Sin datos aún</p>"
+  let peores = sorted.slice(-3).reverse().filter(p=>(p.racha||0)<3)
+  peoresDiv.innerHTML = peores.length ? peores.map(p=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:var(--red-light);margin-bottom:5px;font-size:13px;border-left:3px solid var(--red)">
+      <span><b>${p.nombre}</b></span>
+      <span class="badge badge-red">${p.racha||0} días</span>
+    </div>`).join('') : "<p style='color:var(--text3);font-size:12px'>Todos van bien</p>"
 }
 
-// ===== CREAR PACIENTE =====
+/* ═══════════════════════════════════════
+   CREAR PACIENTE
+═══════════════════════════════════════ */
 async function crearPaciente() {
-  let nombreVal = document.getElementById("nombre").value
-  let usuarioVal = document.getElementById("usuario").value.trim()
-  let passVal = document.getElementById("password").value
-  let edadVal = document.getElementById("edad").value
-  let pesoVal = document.getElementById("peso").value
-  let alturaVal = document.getElementById("altura").value
-  let objetivoVal = document.getElementById("objetivo").value
-  if (!nombreVal || !usuarioVal || !passVal) { alert("Nombre, usuario y contraseña son requeridos"); return }
-
-  mostrarLoader("Verificando usuario...")
+  let nombreVal  = document.getElementById('nombre').value
+  let usuarioVal = document.getElementById('usuario').value.trim()
+  let passVal    = document.getElementById('password').value
+  let edadVal    = document.getElementById('edad').value
+  let pesoVal    = document.getElementById('peso').value
+  let alturaVal  = document.getElementById('altura').value
+  let objetivoVal= document.getElementById('objetivo').value
+  if (!nombreVal||!usuarioVal||!passVal) { alert('Nombre, usuario y contraseña son requeridos'); return }
+  mostrarLoader('Verificando usuario...')
   const existe = await window._db.getPaciente(usuarioVal)
-  if (existe) { ocultarLoader(); alert("Este usuario ya existe ❌"); return }
+  if (existe) { ocultarLoader(); alert('Este usuario ya existe'); return }
   ocultarLoader()
-
-  let nuevoPaciente = {
-    nombre: nombreVal, usuario: usuarioVal, password: passVal, edad: edadVal,
-    peso: pesoVal, altura: alturaVal, objetivo: objetivoVal,
-    calorias: calcularCalorias(pesoVal, alturaVal, edadVal, objetivoVal),
-    fecha: new Date().toDateString(),
-    dietasemanal: {},
-    comidas: {desayuno:false,refa1:false,almuerzo:false,refa2:false,cena:false},
-    progreso: 0, racha: 0, nivel: 1, notificaciones: [], nutri: nutriActual.user, plan: "básico"
+  window._tempPaciente = {
+    nombre:nombreVal, usuario:usuarioVal, password:passVal, edad:edadVal,
+    peso:pesoVal, altura:alturaVal, objetivo:objetivoVal,
+    calorias:calcularCalorias(pesoVal,alturaVal,edadVal,objetivoVal),
+    fecha:new Date().toDateString(), dietasemanal:{},
+    comidas:{desayuno:false,refa1:false,almuerzo:false,refa2:false,cena:false},
+    progreso:0, racha:0, nivel:1, notificaciones:[], nutri:nutriActual.user, plan:'básico'
   }
-  window._tempPaciente = nuevoPaciente
-  pantallaPlanYPago("paciente", "nutri")
+  pantallaPlanYPago('paciente','nutri')
 }
 
-// ===== DIETA SEMANAL =====
+/* ═══════════════════════════════════════
+   DIETA SEMANAL (sin cambios)
+═══════════════════════════════════════ */
 async function crearDietaSemanal(usuario) {
-  mostrarLoader("Cargando datos...")
+  mostrarLoader('Cargando datos...')
   let paciente = await window._db.getPaciente(usuario)
   ocultarLoader()
-  let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
-  window._dietaUsuario = usuario
-  window._diaIdx = 0
-  window._pacienteDieta = paciente
+  let dias = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo']
+  window._dietaUsuario = usuario; window._diaIdx = 0; window._pacienteDieta = paciente
   renderFormDieta(paciente, dias, 0)
 }
 
 function renderFormDieta(paciente, dias, diaActualIdx) {
-  let d = dias[diaActualIdx]
-  let existente = paciente.dietasemanal?.[d] || {}
+  let d = dias[diaActualIdx], existente = paciente.dietasemanal?.[d] || {}
   app.innerHTML = `
   <div class="card">
-    <button onclick="dashboard()">⬅ Cancelar</button>
-    <h2>🥗 Dieta semanal — <b>${paciente.nombre}</b></h2>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">
-      ${dias.map((dia,i) => `<span onclick="cambiarDia(${i})" style="padding:6px 12px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:700;background:${i===diaActualIdx?'#4CAF50':'#eee'};color:${i===diaActualIdx?'white':'#555'}">${dia.charAt(0).toUpperCase()+dia.slice(1)}</span>`).join('')}
+    <button class="btn btn-ghost" onclick="dashboard()" style="margin-bottom:14px">${icon('back')} Cancelar</button>
+    <div class="card-header">
+      <div class="card-title">Dieta semanal — ${paciente.nombre}</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div><label style="font-size:13px;font-weight:700;color:#555">🍳 Desayuno</label><input id="f-desayuno" placeholder="Ej: Avena con frutas" value="${existente.desayuno||''}"></div>
-      <div><label style="font-size:13px;font-weight:700;color:#555">🍎 Refa 1</label><input id="f-refa1" placeholder="Ej: Manzana" value="${existente.refa1||''}"></div>
-      <div><label style="font-size:13px;font-weight:700;color:#555">🍛 Almuerzo</label><input id="f-almuerzo" placeholder="Ej: Arroz con pollo" value="${existente.almuerzo||''}"></div>
-      <div><label style="font-size:13px;font-weight:700;color:#555">🥪 Refa 2</label><input id="f-refa2" placeholder="Ej: Yogur" value="${existente.refa2||''}"></div>
-      <div><label style="font-size:13px;font-weight:700;color:#555">🌙 Cena</label><input id="f-cena" placeholder="Ej: Sopa de verduras" value="${existente.cena||''}"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px">
+      ${dias.map((dia,i)=>`<span onclick="cambiarDia(${i})" style="padding:6px 13px;border-radius:99px;cursor:pointer;font-size:12.5px;font-weight:600;background:${i===diaActualIdx?'var(--green)':'var(--surface2)'};color:${i===diaActualIdx?'white':'var(--text2)'};border:1px solid ${i===diaActualIdx?'var(--green)':'var(--border)'};transition:all .15s">${dia.charAt(0).toUpperCase()+dia.slice(1)}</span>`).join('')}
     </div>
-    <div style="display:flex;justify-content:space-between;margin-top:16px;">
-      <button onclick="guardarDiaDieta('${paciente.usuario}')" style="background:#4CAF50;flex:1;margin-right:6px;">
-        ${diaActualIdx<6?'Guardar y siguiente ➡':'✅ Guardar y terminar'}
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="input-group" style="margin:0"><label class="input-label">Desayuno</label><input id="f-desayuno" placeholder="Ej: Avena con frutas" value="${existente.desayuno||''}"></div>
+      <div class="input-group" style="margin:0"><label class="input-label">Refacción 1</label><input id="f-refa1" placeholder="Ej: Manzana" value="${existente.refa1||''}"></div>
+      <div class="input-group" style="margin:0"><label class="input-label">Almuerzo</label><input id="f-almuerzo" placeholder="Ej: Arroz con pollo" value="${existente.almuerzo||''}"></div>
+      <div class="input-group" style="margin:0"><label class="input-label">Refacción 2</label><input id="f-refa2" placeholder="Ej: Yogur" value="${existente.refa2||''}"></div>
+      <div class="input-group" style="margin:0"><label class="input-label">Cena</label><input id="f-cena" placeholder="Ej: Sopa de verduras" value="${existente.cena||''}"></div>
+    </div>
+    <div style="margin-top:18px;display:flex;gap:8px">
+      <button class="btn btn-primary btn-full" onclick="guardarDiaDieta('${paciente.usuario}')">
+        ${diaActualIdx<6?'Guardar y siguiente':'Guardar y terminar'}
       </button>
     </div>
-    <p style="text-align:center;font-size:12px;color:#aaa;margin-top:8px;">Día ${diaActualIdx+1} de 7</p>
+    <p style="text-align:center;font-size:11.5px;color:var(--text3);margin-top:10px">Día ${diaActualIdx+1} de 7</p>
   </div>`
 }
 
 async function cambiarDia(idx) {
   let paciente = window._pacienteDieta
-  let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
-  let d = dias[window._diaIdx || 0]
+  let dias = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo']
+  let d = dias[window._diaIdx||0]
   if (!paciente.dietasemanal) paciente.dietasemanal = {}
-  paciente.dietasemanal[d] = {
-    desayuno: document.getElementById("f-desayuno")?.value || "",
-    refa1: document.getElementById("f-refa1")?.value || "",
-    almuerzo: document.getElementById("f-almuerzo")?.value || "",
-    refa2: document.getElementById("f-refa2")?.value || "",
-    cena: document.getElementById("f-cena")?.value || ""
-  }
-  window._diaIdx = idx
-  renderFormDieta(paciente, dias, idx)
+  paciente.dietasemanal[d] = { desayuno:document.getElementById('f-desayuno')?.value||'', refa1:document.getElementById('f-refa1')?.value||'', almuerzo:document.getElementById('f-almuerzo')?.value||'', refa2:document.getElementById('f-refa2')?.value||'', cena:document.getElementById('f-cena')?.value||'' }
+  window._diaIdx = idx; renderFormDieta(paciente, dias, idx)
 }
 
 async function guardarDiaDieta(usuario) {
   let paciente = window._pacienteDieta
-  let dias = ["lunes","martes","miercoles","jueves","viernes","sabado","domingo"]
-  let idx = window._diaIdx || 0
-  let d = dias[idx]
+  let dias = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo']
+  let idx = window._diaIdx||0, d = dias[idx]
   if (!paciente.dietasemanal) paciente.dietasemanal = {}
-  paciente.dietasemanal[d] = {
-    desayuno: document.getElementById("f-desayuno").value,
-    refa1: document.getElementById("f-refa1").value,
-    almuerzo: document.getElementById("f-almuerzo").value,
-    refa2: document.getElementById("f-refa2").value,
-    cena: document.getElementById("f-cena").value
-  }
-  mostrarLoader("Guardando en Firebase...")
-  await window._db.guardarPaciente(paciente)
-  ocultarLoader()
-
-  if (idx < 6) {
-    window._diaIdx = idx + 1
-    renderFormDieta(paciente, dias, idx + 1)
-  } else {
-    alert("✅ Dieta semanal guardada en la nube")
-    dashboard()
-  }
+  paciente.dietasemanal[d] = { desayuno:document.getElementById('f-desayuno').value, refa1:document.getElementById('f-refa1').value, almuerzo:document.getElementById('f-almuerzo').value, refa2:document.getElementById('f-refa2').value, cena:document.getElementById('f-cena').value }
+  mostrarLoader('Guardando en Firebase...')
+  await window._db.guardarPaciente(paciente); ocultarLoader()
+  if (idx < 6) { window._diaIdx = idx+1; renderFormDieta(paciente, dias, idx+1) }
+  else { alert('Dieta semanal guardada en la nube'); dashboard() }
 }
 
-// ===== LOGIN PACIENTE =====
-function loginPaciente() {
-  limpiarListeners()
-  app.innerHTML = `
-  <div class="card">
-    <button onclick="inicio()">⬅</button>
-    <h2>Login Paciente</h2>
-    <input id="userPaciente" placeholder="Usuario">
-    <input id="passPaciente" type="password" placeholder="Contraseña">
-    <button onclick="entrarPaciente()">Entrar</button>
-    <p style="cursor:pointer;color:#4CAF50;" onclick="olvidePass('paciente')">¿Olvidaste tu contraseña?</p>
-  </div>`
-}
-
-function olvidePass(tipo) {
-  app.innerHTML = `
-  <div class="card">
-    <button onclick="inicio()">⬅ Volver</button>
-    <h2>Recuperar contraseña</h2>
-    <input id="userRecuperar" placeholder="Usuario">
-    <input id="nuevaPass" type="password" placeholder="Nueva contraseña">
-    <button onclick="cambiarPassword('${tipo}')">Cambiar contraseña</button>
-  </div>`
-}
-
-async function cambiarPassword(tipo) {
-  let user = document.getElementById("userRecuperar").value.trim()
-  let nueva = document.getElementById("nuevaPass").value
-  if (!user || !nueva) { alert("Completa todos los campos"); return }
-  mostrarLoader("Actualizando...")
-  if (tipo == "paciente") {
-    let p = await window._db.getPaciente(user)
-    if (!p) { ocultarLoader(); alert("Usuario no encontrado ❌"); return }
-    p.password = nueva
-    await window._db.guardarPaciente(p)
-  } else {
-    let n = await window._db.getNutri(user)
-    if (!n) { ocultarLoader(); alert("Usuario no encontrado ❌"); return }
-    n.pass = nueva
-    await window._db.guardarNutri(n)
-  }
-  ocultarLoader()
-  alert("Contraseña actualizada ✅")
-  if (tipo == "paciente") loginPaciente()
-  else loginNutri()
-}
-
-async function entrarPaciente() {
-  let u = document.getElementById("userPaciente").value.trim()
-  let p = document.getElementById("passPaciente").value
-  if (!window._dbReady) { mostrarLoader("Conectando con Firebase..."); await esperarDB() }
-  mostrarLoader("Verificando...")
-  const pac = await window._db.getPaciente(u)
-  ocultarLoader()
-  if (!pac || pac.password !== p) { alert("Credenciales incorrectas"); return }
-  pacienteActual = pac
-  panelPaciente()
-}
-
-// ===== AVATAR =====
+/* ═══════════════════════════════════════
+   PANEL PACIENTE
+═══════════════════════════════════════ */
 function avatar() {
-  let p = pacienteActual.progreso
-  if (p >= 100) return "🏆"
-  if (p >= 80) return "🏋🏻‍♂️"
-  if (p >= 60) return "🦵🏻"
-  if (p >= 40) return "💪"
-  return "🙂"
+  const p = pacienteActual.progreso
+  if (p>=100) return icon('trophy')
+  if (p>=80)  return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><circle cx="12" cy="5" r="3"/><path d="M12 8v8M9 20h6"/><path d="M9 11l-3 3M15 11l3 3"/></svg>`
+  if (p>=60)  return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><circle cx="12" cy="5" r="3"/><path d="M12 8v5M9 18h6"/></svg>`
+  return icon('person')
 }
 
-// ===== MARCAR COMIDA (guarda en Firebase) =====
-async function marcarComida(tipo) {
-  if (pacienteActual.comidas[tipo]) { alert("Ya marcaste esta comida ✅"); return }
-  pacienteActual.comidas[tipo] = true
-  pacienteActual.progreso += 20
-  if (pacienteActual.progreso > 100) pacienteActual.progreso = 100
-
-  if (!pacienteActual.historialComidas) pacienteActual.historialComidas = []
-  let hoy = new Date().toDateString()
-  let entradaHoy = pacienteActual.historialComidas.find(h => h.fecha == hoy)
-  if (!entradaHoy) {
-    entradaHoy = { fecha: hoy, comidas: [], calorias: 0 }
-    pacienteActual.historialComidas.push(entradaHoy)
-  }
-  let calPorComida = {
-    desayuno: Math.round(pacienteActual.calorias*0.25),
-    refa1: Math.round(pacienteActual.calorias*0.1),
-    almuerzo: Math.round(pacienteActual.calorias*0.35),
-    refa2: Math.round(pacienteActual.calorias*0.1),
-    cena: Math.round(pacienteActual.calorias*0.2)
-  }
-  entradaHoy.comidas.push(tipo)
-  entradaHoy.calorias += calPorComida[tipo] || 0
-
-  if (pacienteActual.progreso == 100) {
-    pacienteActual.racha += 1
-    alert("🎉 ¡Felicidades! Completaste tu día. Racha actual: " + pacienteActual.racha)
-  }
-
-  // Guardar en Firebase (el listener actualizará la UI automáticamente)
-  await window._db.guardarPaciente(pacienteActual)
-  panelPaciente()
-}
-
-// ===== PANEL PACIENTE (con tiempo real) =====
 function panelPaciente() {
   limpiarListeners()
   reiniciarDia()
+  buildSidebarPaciente('home')
   _renderPanelPaciente(pacienteActual)
-
-  // Escuchar cambios en tiempo real
   _unsubscribePaciente = window._db.escucharPaciente(pacienteActual.usuario, (datos) => {
-    // Solo actualizar si los datos cambiaron externamente (no desde esta sesión)
-    let hoy = diaActual()
-    let dietaHoy = datos.dietasemanal?.[hoy] || {}
-    let divDieta = document.getElementById("dieta-hoy")
+    let hoy = diaActual(), dietaHoy = datos.dietasemanal?.[hoy] || {}
+    let divDieta = document.getElementById('dieta-hoy')
     if (divDieta) {
       divDieta.innerHTML = `
-        <p>Desayuno: ${dietaHoy.desayuno||""}</p>
-        <p>Refa: ${dietaHoy.refa1||""}</p>
-        <p>Almuerzo: ${dietaHoy.almuerzo||""}</p>
-        <p>Refa: ${dietaHoy.refa2||""}</p>
-        <p>Cena: ${dietaHoy.cena||""}</p>`
+        <p><b style="font-size:11px;text-transform:uppercase;color:var(--text3)">Desayuno</b><br>${dietaHoy.desayuno||'<i style="color:var(--text3)">No asignado</i>'}</p>
+        <p><b style="font-size:11px;text-transform:uppercase;color:var(--text3)">Refacción 1</b><br>${dietaHoy.refa1||'<i style="color:var(--text3)">No asignado</i>'}</p>
+        <p><b style="font-size:11px;text-transform:uppercase;color:var(--text3)">Almuerzo</b><br>${dietaHoy.almuerzo||'<i style="color:var(--text3)">No asignado</i>'}</p>
+        <p><b style="font-size:11px;text-transform:uppercase;color:var(--text3)">Refacción 2</b><br>${dietaHoy.refa2||'<i style="color:var(--text3)">No asignado</i>'}</p>
+        <p><b style="font-size:11px;text-transform:uppercase;color:var(--text3)">Cena</b><br>${dietaHoy.cena||'<i style="color:var(--text3)">No asignado</i>'}</p>`
     }
-    let divBadge = document.getElementById("sync-timestamp")
-    if (divBadge) divBadge.textContent = "Actualizado: " + new Date().toLocaleTimeString()
+    let divBadge = document.getElementById('sync-timestamp')
+    if (divBadge) divBadge.textContent = 'Actualizado: ' + new Date().toLocaleTimeString()
     pacienteActual = datos
   })
 }
@@ -807,539 +1605,525 @@ function reiniciarDia() {
 }
 
 function _renderPanelPaciente(p) {
-  let hoy = diaActual()
-  let dietaHoy = p.dietasemanal?.[hoy] || {}
+  let hoy = diaActual(), dietaHoy = p.dietasemanal?.[hoy] || {}
   app.innerHTML = `
   <div class="card">
-    <h2>${p.nombre} <span style="font-size:13px;background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:12px;">${p.plan||'básico'}</span></h2>
-    <div style="font-size:11px;color:#4CAF50;font-weight:700;margin-bottom:6px;" id="sync-timestamp">🔴 En vivo</div>
-    <div class="avatar">${avatar()}</div>
-    <div class="progress">
-      <div class="bar" style="width:${p.progreso}%">${p.progreso}%</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:48px;height:48px;border-radius:12px;background:var(--green-light);display:flex;align-items:center;justify-content:center">${avatar()}</div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700">${p.nombre}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">
+          <span class="badge badge-${p.plan=='premium'?'green':p.plan=='estandar'?'gold':'muted'}">${p.plan||'básico'}</span>
+          <span class="live-badge" id="sync-timestamp"><span class="dot"></span>En vivo</span>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:24px;font-weight:800;color:var(--green)">${p.progreso}%</div>
+        <div style="font-size:11px;color:var(--text3)">hoy</div>
+      </div>
     </div>
-    <p>Calorías: ${p.calorias}</p>
-    <p>Racha:</p>
-    <p style="font-size:22px">${barraRacha()}</p>
+    <div class="progress"><div class="bar" style="width:${p.progreso}%">${p.progreso>15?p.progreso+'%':''}</div></div>
+    <div style="margin-top:14px">
+      <div style="font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:8px">RACHA ACTUAL — ${p.racha} días</div>
+      ${barraRacha()}
+    </div>
+    <div style="margin-top:12px;font-size:12.5px;color:var(--text2)">Meta calórica: <b>${p.calorias} kcal/día</b></div>
   </div>
+
   <div class="card">
-    <h3>Marcar comidas</h3>
-    <button onclick="marcarComida('desayuno')">🍳 Desayuno</button>
-    <button onclick="marcarComida('refa1')">🍎 Refa 1</button>
-    <button onclick="marcarComida('almuerzo')">🍛 Almuerzo</button>
-    <button onclick="marcarComida('refa2')">🥪 Refa 2</button>
-    <button onclick="marcarComida('cena')">🌙 Cena</button>
-  </div>
-  <div class="card">
-    <h3>Dieta de hoy (${hoy}) <span style="font-size:11px;color:#4CAF50;">↺ tiempo real</span></h3>
-    <div id="dieta-hoy">
-      <p>Desayuno: ${dietaHoy.desayuno||""}</p>
-      <p>Refa: ${dietaHoy.refa1||""}</p>
-      <p>Almuerzo: ${dietaHoy.almuerzo||""}</p>
-      <p>Refa: ${dietaHoy.refa2||""}</p>
-      <p>Cena: ${dietaHoy.cena||""}</p>
+    <div class="card-header">
+      <div class="card-title">Registro de comidas</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
+      ${[['desayuno','Desayuno'],['refa1','Refacción 1'],['almuerzo','Almuerzo'],['refa2','Refacción 2'],['cena','Cena']].map(([k,label])=>`
+      <button onclick="marcarComida('${k}')" style="padding:14px 10px;border-radius:var(--radius);border:1.5px solid ${p.comidas[k]?'var(--green)':'var(--border)'};background:${p.comidas[k]?'var(--green-light)':'var(--surface)'};color:${p.comidas[k]?'var(--green-dark)':'var(--text2)'};cursor:pointer;font-family:Inter,sans-serif;font-size:12.5px;font-weight:600;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div style="width:32px;height:32px;border-radius:50%;background:${p.comidas[k]?'var(--green)':'var(--surface2)'};display:flex;align-items:center;justify-content:center">
+          ${p.comidas[k]?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`:icon('food').replace('currentColor','#94a3b8')}
+        </div>
+        ${label}
+      </button>`).join('')}
     </div>
   </div>
+
   <div class="card">
-    <h3>🤖 Funciones AI</h3>
+    <div class="card-header">
+      <div class="card-title">Dieta de hoy</div>
+      <span class="live-badge"><span class="dot"></span>Tiempo real</span>
+    </div>
+    <div id="dieta-hoy" style="display:flex;flex-direction:column;gap:10px">
+      ${[['desayuno','Desayuno'],['refa1','Refacción 1'],['almuerzo','Almuerzo'],['refa2','Refacción 2'],['cena','Cena']].map(([k,label])=>`
+      <div style="padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface)">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:2px">${label}</div>
+        <div style="font-size:13.5px;color:var(--text)">${dietaHoy[k]||'<i style="color:var(--text3)">No asignado</i>'}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Funciones AI</div></div>
     ${['estandar','premium'].includes(p.plan) ? `
-    <button onclick="analisisProgreso()" style="background:#7C4DFF;width:100%;margin-bottom:6px;">📊 Analizar mi progreso con AI</button>
-    <button onclick="chatNutriAI()" style="background:#0288D1;width:100%;">💬 Chat con Nutricionista AI</button>
-    ` : `<div class="ai-locked">🔒 Funciones AI disponibles en planes <b>Estándar</b> y <b>Premium</b>.<br><span style="font-size:12px;cursor:pointer;color:#4CAF50;" onclick="verPrecios()">Ver planes →</span></div>`}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-full" onclick="analisisProgreso()" style="background:#7C4DFF">${icon('ai')} Analizar mi progreso</button>
+      <button class="btn btn-secondary btn-full" onclick="chatNutriAI()">${icon('ai')} Chat con Nutricionista AI</button>
+    </div>
+    ` : `<div class="ai-locked">Funciones AI disponibles en planes <b>Estándar</b> y <b>Premium</b>.<br><span style="cursor:pointer;color:var(--green);font-weight:600" onclick="verPrecios()">Ver planes →</span></div>`}
   </div>
+
   <div class="card">
-    <h3>📊 Dashboard de comidas</h3>
-    ${p.plan=="premium" ? `
+    <div class="card-header"><div class="card-title">Dashboard de comidas</div></div>
+    ${p.plan=='premium' ? `
     <canvas id="grafica-calorias" height="160"></canvas>
-    <h4 style="margin:14px 0 8px">📋 Historial reciente</h4>
-    <div id="historial-comidas"></div>
-    ` : `<div class="ai-locked">🔒 Dashboard disponible solo en el plan <b>Premium</b>.<br><span style="font-size:12px;cursor:pointer;color:#4CAF50;" onclick="verPrecios()">Ver planes →</span></div>`}
+    <div style="margin-top:14px" id="historial-comidas"></div>
+    ` : `<div class="ai-locked">Dashboard disponible solo en el plan <b>Premium</b>.<br><span style="cursor:pointer;color:var(--green);font-weight:600" onclick="verPrecios()">Ver planes →</span></div>`}
   </div>
+
   <div class="card">
-    <h3>🛵 Pedir comida</h3>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">¿Qué comida?</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;" id="selector-tipo-comida">
-        <span onclick="selTipo('desayuno',this)" class="chip-comida chip-activo">🍳 Desayuno</span>
-        <span onclick="selTipo('refa1',this)" class="chip-comida">🍎 Refa 1</span>
-        <span onclick="selTipo('almuerzo',this)" class="chip-comida">🍛 Almuerzo</span>
-        <span onclick="selTipo('refa2',this)" class="chip-comida">🥪 Refa 2</span>
-        <span onclick="selTipo('cena',this)" class="chip-comida">🌙 Cena</span>
+    <div class="card-header"><div class="card-title">Pedir comida</div></div>
+    <div style="margin-bottom:12px">
+      <div class="input-label">Tipo de comida</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px" id="selector-tipo-comida">
+        <span onclick="selTipo('desayuno',this)" class="chip-comida chip-activo">Desayuno</span>
+        <span onclick="selTipo('refa1',this)"    class="chip-comida">Refacción 1</span>
+        <span onclick="selTipo('almuerzo',this)" class="chip-comida">Almuerzo</span>
+        <span onclick="selTipo('refa2',this)"    class="chip-comida">Refacción 2</span>
+        <span onclick="selTipo('cena',this)"     class="chip-comida">Cena</span>
       </div>
       <input type="hidden" id="tipoComida" value="desayuno">
     </div>
-    <div id="sugerencia-dieta" style="background:#e8f5e9;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;margin-bottom:10px;"></div>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">📍 Dirección de entrega</label>
-      <input id="direccion" placeholder="Ej: 5a Avenida, Zona 1" style="width:100%;margin:0;">
+    <div id="sugerencia-dieta" style="background:var(--green-light);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:var(--green-dark);margin-bottom:12px"></div>
+    <div class="input-group">
+      <label class="input-label">Dirección de entrega</label>
+      <input id="direccion" placeholder="Ej: 5a Avenida, Zona 1">
     </div>
-    <div style="margin-bottom:14px;">
-      <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:6px;">💳 Método de pago</label>
-      <div style="display:flex;gap:8px;">
-        <span onclick="selPago('efectivo',this)" class="chip-pago chip-pago-activo">💵 Efectivo</span>
-        <span onclick="selPago('tarjeta',this)" class="chip-pago">💳 Tarjeta</span>
+    <div style="margin-bottom:12px">
+      <div class="input-label">Método de pago</div>
+      <div style="display:flex;gap:8px">
+        <span onclick="selPago('efectivo',this)" class="chip-pago chip-pago-activo">Efectivo</span>
+        <span onclick="selPago('tarjeta',this)"  class="chip-pago">Tarjeta</span>
       </div>
       <input type="hidden" id="metodoPago" value="efectivo">
     </div>
-    <div id="campo-billete" style="margin-bottom:10px;">
-      <label style="font-size:13px;font-weight:700;color:#555;display:block;margin-bottom:4px;">¿Con cuánto pagarás? (Q)</label>
-      <input id="billete" type="number" placeholder="Ej: 100" style="width:100%;margin:0;">
+    <div id="campo-billete" class="input-group">
+      <label class="input-label">¿Con cuánto pagarás? (Q)</label>
+      <input id="billete" type="number" placeholder="Ej: 100">
     </div>
-    <button onclick="pedido()" style="width:100%;padding:13px;font-size:15px;font-weight:700;">Confirmar pedido 🛵</button>
+    <button class="btn btn-primary btn-full btn-lg" onclick="pedido()">Confirmar pedido</button>
   </div>`
   setTimeout(renderDashboard, 50)
   setTimeout(() => { let el = document.querySelector('.chip-comida.chip-activo'); if(el) selTipo('desayuno', el) }, 60)
 }
 
+/* ═══════════════════════════════════════
+   MARCAR COMIDA
+═══════════════════════════════════════ */
+async function marcarComida(tipo) {
+  if (pacienteActual.comidas[tipo]) { alert('Ya marcaste esta comida'); return }
+  pacienteActual.comidas[tipo] = true
+  pacienteActual.progreso += 20
+  if (pacienteActual.progreso > 100) pacienteActual.progreso = 100
+  if (!pacienteActual.historialComidas) pacienteActual.historialComidas = []
+  let hoy = new Date().toDateString()
+  let entradaHoy = pacienteActual.historialComidas.find(h => h.fecha == hoy)
+  if (!entradaHoy) { entradaHoy = {fecha:hoy,comidas:[],calorias:0}; pacienteActual.historialComidas.push(entradaHoy) }
+  let calPorComida = {desayuno:Math.round(pacienteActual.calorias*.25),refa1:Math.round(pacienteActual.calorias*.1),almuerzo:Math.round(pacienteActual.calorias*.35),refa2:Math.round(pacienteActual.calorias*.1),cena:Math.round(pacienteActual.calorias*.2)}
+  entradaHoy.comidas.push(tipo); entradaHoy.calorias += calPorComida[tipo]||0
+  if (pacienteActual.progreso == 100) { pacienteActual.racha += 1; alert('¡Felicidades! Completaste tu día. Racha: ' + pacienteActual.racha) }
+  await window._db.guardarPaciente(pacienteActual); panelPaciente()
+}
+
+/* ═══════════════════════════════════════
+   DASHBOARD CALÓRICO PACIENTE
+═══════════════════════════════════════ */
 function renderDashboard() {
-  if (!pacienteActual || pacienteActual.plan != "premium") return
+  if (!pacienteActual || pacienteActual.plan != 'premium') return
   let historial = (pacienteActual.historialComidas||[]).slice(-7)
-  let diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"]
+  let diasSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
   let labels = historial.map(h => { let d = new Date(h.fecha); return diasSemana[d.getDay()] })
-  let dataKcal = historial.map(h => h.calorias || 0)
-  let meta = pacienteActual.calorias || 2000
-  let ctx = document.getElementById("grafica-calorias")
+  let dataKcal = historial.map(h => h.calorias||0), meta = pacienteActual.calorias||2000
+  let ctx = document.getElementById('grafica-calorias')
   if (!ctx) return
   if (window._chartInstance) window._chartInstance.destroy()
   window._chartInstance = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: labels.length ? labels : ["Sin datos"],
-      datasets: [
-        { label:"Calorías consumidas", data: dataKcal.length ? dataKcal : [0], backgroundColor:"rgba(76,175,80,0.7)", borderRadius:8, borderSkipped:false },
-        { label:"Meta diaria", data: labels.map(()=>meta), type:"line", borderColor:"#FF7043", borderDash:[6,4], pointRadius:0, borderWidth:2, fill:false }
-      ]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend:{labels:{font:{family:"Nunito"},color:"#555"}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": "+ctx.parsed.y+" kcal"}} },
-      scales: { y:{beginAtZero:true,ticks:{color:"#888",font:{family:"Nunito"}},grid:{color:"#f0f0f0"}}, x:{ticks:{color:"#888",font:{family:"Nunito"}},grid:{display:false}} }
-    }
+    type:'bar',
+    data:{ labels:labels.length?labels:['Sin datos'], datasets:[
+      {label:'Calorías consumidas',data:dataKcal.length?dataKcal:[0],backgroundColor:'rgba(22,163,74,.7)',borderRadius:8,borderSkipped:false},
+      {label:'Meta diaria',data:labels.map(()=>meta),type:'line',borderColor:'#d97706',borderDash:[6,4],pointRadius:0,borderWidth:2,fill:false}
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{font:{family:'Inter'},color:'#64748b'}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+' kcal'}}},scales:{y:{beginAtZero:true,ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{color:'#f1f5f9'}},x:{ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{display:false}}}}
   })
-  let nombres = {desayuno:"🍳 Desayuno",refa1:"🍎 Refa 1",almuerzo:"🍛 Almuerzo",refa2:"🥪 Refa 2",cena:"🌙 Cena"}
-  let histDiv = document.getElementById("historial-comidas")
+  let nombres = {desayuno:'Desayuno',refa1:'Refacción 1',almuerzo:'Almuerzo',refa2:'Refacción 2',cena:'Cena'}
+  let histDiv = document.getElementById('historial-comidas')
   if (!histDiv) return
-  if (historial.length === 0) { histDiv.innerHTML = "<p style='color:#aaa;font-size:13px'>Aún no hay historial.</p>"; return }
-  let html = ""
+  if (!historial.length) { histDiv.innerHTML = "<p style='color:var(--text3);font-size:13px'>Aún no hay historial.</p>"; return }
+  let html = ''
   ;[...historial].reverse().forEach(h => {
     let d = new Date(h.fecha)
-    let label = h.fecha===new Date().toDateString()?"Hoy":diasSemana[d.getDay()]+" "+d.getDate()
-    let chips = (h.comidas||[]).map(c=>`<span style="background:#e8f5e9;color:#2e7d32;border-radius:20px;padding:2px 9px;font-size:12px;margin:2px 2px 0 0;display:inline-block;">${nombres[c]||c}</span>`).join("")
+    let label = h.fecha===new Date().toDateString()?'Hoy':diasSemana[d.getDay()]+' '+d.getDate()
+    let chips = (h.comidas||[]).map(c=>`<span style="background:var(--green-light);color:var(--green-dark);border-radius:99px;padding:2px 9px;font-size:11.5px;margin:2px 2px 0 0;display:inline-block">${nombres[c]||c}</span>`).join('')
     let pct = Math.round((h.calorias/meta)*100)
-    let barColor = pct>=90?"#4CAF50":pct>=60?"#FFA726":"#EF5350"
-    html+=`<div style="border-left:3px solid ${barColor};padding:8px 12px;margin-bottom:8px;background:#fafafa;border-radius:0 8px 8px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;"><b style="font-size:14px">${label}</b><span style="font-size:12px;color:#888">${h.calorias} kcal <span style="color:${barColor};font-weight:700">(${pct}%)</span></span></div>
-      <div style="margin-top:5px">${chips||"<span style='color:#ccc;font-size:12px'>Sin comidas</span>"}</div>
+    let barColor = pct>=90?'var(--green)':pct>=60?'var(--gold)':'var(--red)'
+    html+=`<div style="border-left:3px solid ${barColor};padding:9px 13px;margin-bottom:8px;background:var(--surface2);border-radius:0 8px 8px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:13.5px">${label}</b><span style="font-size:12px;color:var(--text3)">${h.calorias} kcal <span style="color:${barColor};font-weight:700">(${pct}%)</span></span></div>
+      <div style="margin-top:5px">${chips||'<span style="color:var(--text3);font-size:12px">Sin comidas</span>'}</div>
     </div>`
   })
   histDiv.innerHTML = html
 }
 
 function selTipo(val, el) {
-  document.getElementById("tipoComida").value = val
-  document.querySelectorAll(".chip-comida").forEach(c => c.classList.remove("chip-activo"))
-  el.classList.add("chip-activo")
-  let hoy = diaActual()
-  let dieta = pacienteActual.dietasemanal?.[hoy] || {}
-  let comida = dieta[val] || null
-  let div = document.getElementById("sugerencia-dieta")
-  if (div) div.innerHTML = comida
-    ? `💡 Tu dieta sugiere: <b>${comida}</b>`
-    : `<span style="color:#f57f17">⚠️ No tienes dieta asignada para esta comida.</span>`
+  document.getElementById('tipoComida').value = val
+  document.querySelectorAll('.chip-comida').forEach(c => c.classList.remove('chip-activo'))
+  el.classList.add('chip-activo')
+  let hoy = diaActual(), dieta = pacienteActual.dietasemanal?.[hoy]||{}, comida = dieta[val]||null
+  let div = document.getElementById('sugerencia-dieta')
+  if (div) div.innerHTML = comida ? `Tu dieta sugiere: <b>${comida}</b>` : `<span style="color:var(--gold)">Sin dieta asignada para esta comida</span>`
 }
 
 function selPago(val, el) {
-  document.getElementById("metodoPago").value = val
-  document.querySelectorAll(".chip-pago").forEach(c => c.classList.remove("chip-pago-activo"))
-  el.classList.add("chip-pago-activo")
-  let campo = document.getElementById("campo-billete")
-  if (campo) campo.style.display = val == "efectivo" ? "block" : "none"
+  document.getElementById('metodoPago').value = val
+  document.querySelectorAll('.chip-pago').forEach(c => c.classList.remove('chip-pago-activo'))
+  el.classList.add('chip-pago-activo')
+  let campo = document.getElementById('campo-billete')
+  if (campo) campo.style.display = val=='efectivo'?'block':'none'
 }
 
 async function pedido() {
-  let tipo = document.getElementById("tipoComida").value
-  let direccion = document.getElementById("direccion").value.trim()
-  let pago = document.getElementById("metodoPago").value
-  let hoy = diaActual()
-  let comida = pacienteActual.dietasemanal?.[hoy]?.[tipo] || null
-
-  if (!direccion) { alert("Por favor ingresa tu dirección de entrega 📍"); return }
-
+  let tipo = document.getElementById('tipoComida').value
+  let direccion = document.getElementById('direccion').value.trim()
+  let pago = document.getElementById('metodoPago').value
+  let hoy = diaActual(), comida = pacienteActual.dietasemanal?.[hoy]?.[tipo]||null
+  if (!direccion) { alert('Ingresa tu dirección de entrega'); return }
   if (!comida) {
     if (!pacienteActual.notificaciones) pacienteActual.notificaciones = []
-    pacienteActual.notificaciones.push({ dia: hoy, tipo })
+    pacienteActual.notificaciones.push({dia:hoy,tipo})
     await window._db.guardarPaciente(pacienteActual)
-    mostrarConfirmacion("⚠️ No tienes dieta asignada para esta comida. Se notificó a tu nutricionista.")
+    mostrarConfirmacion('Sin dieta asignada para esta comida.\nSe notificó a tu nutricionista.')
     return
   }
-
-  let cambio = ""
-  if (pago == "efectivo") {
-    let billete = parseFloat(document.getElementById("billete").value)
-    if (!billete || billete <= 0) { alert("Ingresa el monto con el que pagarás 💵"); return }
+  let cambio = ''
+  if (pago=='efectivo') {
+    let billete = parseFloat(document.getElementById('billete').value)
+    if (!billete||billete<=0) { alert('Ingresa el monto con el que pagarás'); return }
     cambio = `Llevaremos cambio para Q${billete}.`
   }
-  mostrarConfirmacion(`✅ Pedido confirmado\n\n🍽️ ${comida}\n📍 ${direccion}\n💳 ${pago=="efectivo"?"Efectivo":"Tarjeta"}\n${cambio}`)
+  mostrarConfirmacion(`Pedido confirmado\n\n${comida}\n${direccion}\n${pago=='efectivo'?'Efectivo':'Tarjeta'}\n${cambio}`)
 }
 
 function mostrarConfirmacion(msg) {
-  let overlay = document.createElement("div")
-  overlay.id = "modal-overlay"
-  overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;"
-  overlay.innerHTML = `<div style="background:white;border-radius:16px;padding:28px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.2);">
-    <div style="font-size:40px;margin-bottom:10px;">🛵</div>
-    <p style="white-space:pre-line;font-size:14px;color:#333;line-height:1.6">${msg}</p>
-    <button id="btn-cerrar-modal" style="margin-top:14px;width:100%;padding:12px;font-size:15px;font-weight:700;">Aceptar</button>
+  let overlay = document.createElement('div')
+  overlay.id = 'modal-overlay'
+  overlay.className = ''
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px'
+  overlay.innerHTML = `<div class="modal-box">
+    <div class="modal-icon">${icon('food')}</div>
+    <p class="modal-msg">${msg}</p>
+    <button class="btn btn-primary btn-full" id="btn-cerrar-modal">Aceptar</button>
   </div>`
   document.body.appendChild(overlay)
-  document.getElementById("btn-cerrar-modal").addEventListener("click", () => {
-    document.getElementById("modal-overlay")?.remove()
-    panelPaciente()
+  document.getElementById('btn-cerrar-modal').addEventListener('click', () => {
+    document.getElementById('modal-overlay')?.remove(); panelPaciente()
   })
 }
 
+/* ═══════════════════════════════════════
+   NOTIFICACIONES / VER PACIENTE
+═══════════════════════════════════════ */
 async function verNotificaciones(usuario) {
   let p = await window._db.getPaciente(usuario)
-  if (!p.notificaciones || p.notificaciones.length == 0) { alert("Sin notificaciones"); return }
+  if (!p.notificaciones||p.notificaciones.length==0) { alert('Sin notificaciones'); return }
   for (let n of p.notificaciones) {
-    let nueva = prompt("Nueva dieta para " + n.tipo + " del " + n.dia)
+    let nueva = prompt('Nueva dieta para '+n.tipo+' del '+n.dia)
     if (!p.dietasemanal) p.dietasemanal = {}
     if (!p.dietasemanal[n.dia]) p.dietasemanal[n.dia] = {}
     p.dietasemanal[n.dia][n.tipo] = nueva
   }
   p.notificaciones = []
-  await window._db.guardarPaciente(p)
-  alert("Dietas actualizadas ✅")
+  await window._db.guardarPaciente(p); alert('Dietas actualizadas')
 }
 
 async function verPaciente(usuario) {
-  mostrarLoader("Cargando...")
-  let p = await window._db.getPaciente(usuario)
-  ocultarLoader()
+  mostrarLoader('Cargando...')
+  let p = await window._db.getPaciente(usuario); ocultarLoader()
   app.innerHTML = `
   <div class="card">
-    <button onclick="dashboard()">⬅ Volver</button>
-    <h2>${p.nombre}</h2>
-    <p>Edad: ${p.edad}</p>
-    <p>Peso: ${p.peso}</p>
-    <p>Altura: ${p.altura}</p>
-    <p>Objetivo: ${p.objetivo}</p>
-    <p>Progreso: ${p.progreso}%</p>
-    <p>Plan: <b>${p.plan||'básico'}</b></p>
+    <button class="btn btn-ghost" onclick="dashboard()" style="margin-bottom:14px">${icon('back')} Volver</button>
+    <div class="card-header">
+      <div>
+        <div class="card-title">${p.nombre}</div>
+        <div class="card-subtitle">Perfil del paciente</div>
+      </div>
+      <span class="badge badge-${p.plan=='premium'?'green':p.plan=='estandar'?'gold':'muted'}">${p.plan||'básico'}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.edad}</div><div style="font-size:11px;color:var(--text3)">AÑOS</div></div>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.peso}kg</div><div style="font-size:11px;color:var(--text3)">PESO</div></div>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--text)">${p.altura}cm</div><div style="font-size:11px;color:var(--text3)">ALTURA</div></div>
+    </div>
+    <p style="font-size:13px;color:var(--text2)"><b>Objetivo:</b> ${p.objetivo}</p>
+    <p style="font-size:13px;color:var(--text2);margin-top:6px"><b>Progreso:</b> ${p.progreso}%</p>
+    <div class="progress" style="margin-top:8px"><div class="bar" style="width:${p.progreso}%">${p.progreso>15?p.progreso+'%':''}</div></div>
   </div>`
 }
 
+/* ═══════════════════════════════════════
+   RANKING
+═══════════════════════════════════════ */
 async function ranking() {
   limpiarListeners()
-  mostrarLoader("Cargando ranking...")
-  let todos = await window._db.getTodosPacientes()
-  ocultarLoader()
+  mostrarLoader('Cargando ranking...')
+  let todos = await window._db.getTodosPacientes(); ocultarLoader()
   let orden = todos.sort((a,b) => b.progreso - a.progreso)
-  let html = "<div class='card'><h2>🏆 Ranking</h2>"
-  orden.forEach(p => { html += `<p>${p.nombre} - ${p.progreso}%</p>` })
-  html += "</div>"
-  app.innerHTML = html
+  let medals = ['🥇','🥈','🥉']
+  app.innerHTML = `
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Ranking global</div>
+      <span class="badge badge-muted">${todos.length} participantes</span>
+    </div>
+    ${orden.map((p,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:${pacienteActual?.usuario===p.usuario?'var(--green-light)':'var(--surface2)'};margin-bottom:6px">
+      <span style="font-size:18px;width:28px;text-align:center">${i<3?medals[i]:'#'+(i+1)}</span>
+      <span style="flex:1;font-size:13.5px;font-weight:600">${p.nombre}${pacienteActual?.usuario===p.usuario?' (tú)':''}</span>
+      <span class="badge badge-green">${p.progreso}%</span>
+    </div>`).join('') || '<p style="color:var(--text3);font-size:13px">Sin datos</p>'}
+  </div>`
 }
 
-// ===== PLANES Y PAGO =====
+/* ═══════════════════════════════════════
+   PLANES Y PAGO
+═══════════════════════════════════════ */
 function pantallaPlanYPago(tipo, origen) {
   planSeleccionado = null
   app.innerHTML = `
   <div class="card">
-    <button onclick="inicio()">⬅ Volver</button>
-    <h2 style="text-align:center">Elige tu plan 🌟</h2>
-    <p style="text-align:center;color:#666;font-size:14px;">Tu primer mes es <b>GRATIS</b> en cualquier plan</p>
+    <button class="btn btn-ghost" onclick="inicio()" style="margin-bottom:14px">${icon('back')} Volver</button>
+    <div class="card-header">
+      <div>
+        <div class="card-title">Elige tu plan</div>
+        <div class="card-subtitle">Tu primer mes es GRATIS en cualquier plan</div>
+      </div>
+    </div>
     <div id="seccion-planes">${renderPlanes(tipo,origen)}</div>
-    <p style="text-align:center;color:#aaa;font-size:13px;margin-top:10px;">👆 Haz clic en un plan para continuar</p>
+    <p style="text-align:center;color:var(--text3);font-size:12.5px;margin-top:12px">Haz clic en un plan para continuar</p>
   </div>`
 }
 
 function pantallaPago(tipo, origen) {
   app.innerHTML = `
-  <div class="card" style="text-align:center;padding:30px;">
-    <h2>Pasarela de pago 💳</h2>
-    ${planSeleccionado ? `<p>Plan seleccionado: <b style="color:#4CAF50">${PLANES[planSeleccionado].nombre} — $${PLANES[planSeleccionado].precio} USD/mes</b></p>` : ''}
-    <input id="numTarjeta" placeholder="Número de tarjeta (12 dígitos)" maxlength="12" style="width:80%;padding:10px;margin:5px;border-radius:6px;"><br>
-    <input id="fechaVenc" placeholder="MM/AA" maxlength="5" inputmode="numeric" oninput="formatearFecha(this)" style="width:40%;padding:10px;margin:5px;border-radius:6px;"><br>
-    <input id="cvv" placeholder="CVV" maxlength="3" style="width:20%;padding:10px;margin:5px;border-radius:6px;"><br><br>
-    <button onclick="procesarPago('${tipo}','${origen}')" style="padding:12px 20px;font-size:15px;font-weight:700;">Procesar pago 💳</button>
+  <div class="card" style="max-width:420px;margin:0 auto">
+    <button class="btn btn-ghost" onclick="pantallaPlanYPago('${tipo}','${origen}')" style="margin-bottom:14px">${icon('back')} Volver</button>
+    <div class="card-header">
+      <div>
+        <div class="card-title">Información de pago</div>
+        ${planSeleccionado?`<div class="card-subtitle">Plan ${PLANES[planSeleccionado].nombre} — $${PLANES[planSeleccionado].precio} USD/mes</div>`:''}
+      </div>
+    </div>
+    <div class="pago-card-visual">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;opacity:.7;text-transform:uppercase">Tarjeta de crédito / débito</div>
+      <div class="pago-card-num" id="card-num-display">•••• •••• •••• ••••</div>
+      <div class="pago-card-hint">Número de tarjeta</div>
+    </div>
+    <div class="input-row">
+      <div class="input-group">
+        <label class="input-label">Número de tarjeta</label>
+        <input id="numTarjeta" placeholder="000000000000" maxlength="12" oninput="let v=this.value.padEnd(12,'•').replace(/(.{4})/g,'$1 ').trim();document.getElementById('card-num-display').textContent=v">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Vencimiento</label>
+        <input id="fechaVenc" placeholder="MM/AA" maxlength="5" inputmode="numeric" oninput="formatearFecha(this)">
+      </div>
+    </div>
+    <div class="input-group" style="max-width:120px">
+      <label class="input-label">CVV</label>
+      <input id="cvv" placeholder="•••" maxlength="3">
+    </div>
+    <button class="btn btn-primary btn-full btn-lg" onclick="procesarPago('${tipo}','${origen}')">
+      Procesar pago
+    </button>
   </div>`
 }
 
 async function procesarPago(tipo, origen) {
-  let tarjeta = document.getElementById("numTarjeta").value
-  let fecha = document.getElementById("fechaVenc").value
-  let cvv = document.getElementById("cvv").value
-  if (tarjeta.length != 12 || isNaN(tarjeta)) { alert("Número de tarjeta inválido ❌"); return }
-  if (cvv.length != 3 || isNaN(cvv)) { alert("CVV inválido ❌"); return }
-  if (!fecha.match(/^\d{2}\/\d{2}$/)) { alert("Fecha inválida ❌"); return }
-  alert("✅ Pago procesado")
-
-  mostrarLoader("Guardando en Firebase...")
-
+  let tarjeta = document.getElementById('numTarjeta').value
+  let fecha   = document.getElementById('fechaVenc').value
+  let cvv     = document.getElementById('cvv').value
+  if (tarjeta.length!=12||isNaN(tarjeta)) { alert('Número de tarjeta inválido'); return }
+  if (cvv.length!=3||isNaN(cvv)) { alert('CVV inválido'); return }
+  if (!fecha.match(/^\d{2}\/\d{2}$/)) { alert('Fecha inválida'); return }
+  alert('Pago procesado correctamente')
+  mostrarLoader('Guardando en Firebase...')
   try {
-    if (origen == "registro" && tipo == "nutricionista") {
-      let temp = window._tempNutri
-      if (!temp) { ocultarLoader(); alert("Error: datos de registro perdidos. Por favor regístrate de nuevo ❌"); loginNutri(); return }
-      temp.plan = planSeleccionado || "basico"
-      await window._db.guardarNutri(temp)
-      window._tempNutri = null
-      ocultarLoader()
-      alert("Nutricionista registrado ✅")
-      loginNutri()
-      return
+    if (origen=='registro'&&tipo=='nutricionista') {
+      let temp=window._tempNutri; if(!temp){ocultarLoader();alert('Error: regístrate de nuevo');loginNutri();return}
+      temp.plan=planSeleccionado||'basico'; await window._db.guardarNutri(temp); window._tempNutri=null; ocultarLoader(); alert('Nutricionista registrado'); loginNutri(); return
     }
-    if (origen == "nutri") {
-      let temp = window._tempPaciente
-      if (!temp) { ocultarLoader(); alert("Error: datos del paciente perdidos. Por favor inténtalo de nuevo ❌"); dashboard(); return }
-      temp.plan = planSeleccionado || "basico"
-      await window._db.guardarPaciente(temp)
-      window._tempPaciente = null
-      ocultarLoader()
-      alert("Paciente creado correctamente ✅")
-      dashboard()
-      return
+    if (origen=='nutri') {
+      let temp=window._tempPaciente; if(!temp){ocultarLoader();alert('Error: inténtalo de nuevo');dashboard();return}
+      temp.plan=planSeleccionado||'basico'; await window._db.guardarPaciente(temp); window._tempPaciente=null; ocultarLoader(); alert('Paciente creado'); dashboard(); return
     }
-    ocultarLoader()
-    if (tipo == "nutricionista") loginNutri()
-    else loginPaciente()
-  } catch(err) {
-    ocultarLoader()
-    console.error("Error guardando en Firebase:", err)
-    alert("Error al guardar en Firebase ❌ Revisa tu conexión e inténtalo de nuevo.")
-  }
+    ocultarLoader(); if(tipo=='nutricionista')loginNutri();else loginPaciente()
+  } catch(err) { ocultarLoader(); alert('Error al guardar en Firebase. Revisa tu conexión.') }
 }
 
-// ===== RETOS =====
+/* ═══════════════════════════════════════
+   RETOS / INSIGNIAS
+═══════════════════════════════════════ */
 const INSIGNIAS = [
-  {id:"primer_reto", emoji:"🌱", nombre:"Primer paso", desc:"Completa tu primer reto"},
-  {id:"racha3",      emoji:"🔥", nombre:"En llamas",   desc:"Completa 3 retos seguidos"},
-  {id:"retos5",      emoji:"⭐", nombre:"Estrella",    desc:"Completa 5 retos en total"},
-  {id:"retos10",     emoji:"💎", nombre:"Diamante",    desc:"Completa 10 retos en total"},
-  {id:"ai_reto",     emoji:"🤖", nombre:"AI Warrior",  desc:"Completa un reto generado por AI"},
+  {id:'primer_reto',emoji:'🌱',nombre:'Primer paso', desc:'Completa tu primer reto'},
+  {id:'racha3',     emoji:'🔥',nombre:'En llamas',   desc:'Completa 3 retos seguidos'},
+  {id:'retos5',     emoji:'⭐',nombre:'Estrella',    desc:'Completa 5 retos en total'},
+  {id:'retos10',    emoji:'💎',nombre:'Diamante',    desc:'Completa 10 retos en total'},
+  {id:'ai_reto',    emoji:'🤖',nombre:'AI Warrior',  desc:'Completa un reto generado por AI'},
 ]
-
 function tieneInsignia(p, id) { return (p.insignias||[]).includes(id) }
-
 async function otorgarInsignia(p, id) {
-  if (!p.insignias) p.insignias = []
+  if (!p.insignias) p.insignias=[]
   if (!p.insignias.includes(id)) {
-    p.insignias.push(id)
-    let ins = INSIGNIAS.find(i => i.id == id)
+    p.insignias.push(id); let ins=INSIGNIAS.find(i=>i.id==id)
     await window._db.guardarPaciente(p)
-    setTimeout(() => alert("🎖️ ¡Nueva insignia desbloqueada!\n" + ins.emoji + " " + ins.nombre + "\n\"" + ins.desc + "\""), 300)
+    setTimeout(()=>alert('Nueva insignia: '+ins.emoji+' '+ins.nombre), 300)
   }
 }
-
 async function completarReto(idx) {
   if (!pacienteActual) return
-  let retos = pacienteActual.retos || []
-  let r = retos[idx]
-  if (!r || r.completado) return
-  r.completado = true
-  r.fechaCompletado = new Date().toDateString()
-  if (!pacienteActual.retosCompletados) pacienteActual.retosCompletados = 0
+  let retos=pacienteActual.retos||[], r=retos[idx]
+  if (!r||r.completado) return
+  r.completado=true; r.fechaCompletado=new Date().toDateString()
+  if (!pacienteActual.retosCompletados) pacienteActual.retosCompletados=0
   pacienteActual.retosCompletados++
-  if (pacienteActual.retosCompletados === 1) await otorgarInsignia(pacienteActual, "primer_reto")
-  if (pacienteActual.retosCompletados >= 5) await otorgarInsignia(pacienteActual, "retos5")
-  if (pacienteActual.retosCompletados >= 10) await otorgarInsignia(pacienteActual, "retos10")
-  if (r.esAI) await otorgarInsignia(pacienteActual, "ai_reto")
-  await window._db.guardarPaciente(pacienteActual)
-  paginaRetos()
+  if (pacienteActual.retosCompletados===1) await otorgarInsignia(pacienteActual,'primer_reto')
+  if (pacienteActual.retosCompletados>=5)  await otorgarInsignia(pacienteActual,'retos5')
+  if (pacienteActual.retosCompletados>=10) await otorgarInsignia(pacienteActual,'retos10')
+  if (r.esAI) await otorgarInsignia(pacienteActual,'ai_reto')
+  await window._db.guardarPaciente(pacienteActual); paginaRetos()
 }
 
 async function generarRetoAI() {
-  if (!tieneAI()) { alert("🔒 Función disponible en planes Estándar y Premium"); return }
-  let btn = document.getElementById("btn-generar-ai")
-  if (btn) { btn.disabled = true; btn.textContent = "⏳ Generando..." }
-  let promptText = "Eres un nutricionista experto. Genera UN reto nutricional creativo y motivador para este paciente. Responde SOLO con JSON así (sin markdown): {\"titulo\":\"...\",\"descripcion\":\"...\",\"duracion\":\"X días\",\"dificultad\":\"Fácil|Medio|Difícil\"}\nPaciente: Nombre: "+pacienteActual.nombre+", Objetivo: "+pacienteActual.objetivo+", Racha: "+pacienteActual.racha+" días."
+  if (!tieneAI()) { alert('Función disponible en planes Estándar y Premium'); return }
+  let btn=document.getElementById('btn-generar-ai')
+  if (btn) { btn.disabled=true; btn.textContent='Generando...' }
+  let promptText='Eres un nutricionista experto. Genera UN reto nutricional creativo y motivador. Responde SOLO con JSON (sin markdown): {"titulo":"...","descripcion":"...","duracion":"X días","dificultad":"Fácil|Medio|Difícil"}\nPaciente: '+pacienteActual.nombre+', Objetivo: '+pacienteActual.objetivo+', Racha: '+pacienteActual.racha+' días.'
   try {
-    const res = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:300, messages:[{role:"user",content:promptText}] })
-    })
-    const data = await res.json()
-    let texto = data.content.map(b => b.text || "").join("").replace(/```json|```/g, "").trim()
-    let retoAI = JSON.parse(texto)
-    retoAI.esAI = true; retoAI.completado = false; retoAI.fechaCreado = new Date().toDateString()
-    if (!pacienteActual.retos) pacienteActual.retos = []
-    pacienteActual.retos.unshift(retoAI)
-    await window._db.guardarPaciente(pacienteActual)
-    paginaRetos()
-  } catch(e) {
-    alert("❌ Error al generar reto. Intenta de nuevo.")
-    if (btn) { btn.disabled = false; btn.textContent = "🤖 Generar reto con AI" }
-  }
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:promptText}]})})
+    const data=await res.json()
+    let texto=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim()
+    let retoAI=JSON.parse(texto); retoAI.esAI=true; retoAI.completado=false; retoAI.fechaCreado=new Date().toDateString()
+    if (!pacienteActual.retos) pacienteActual.retos=[]
+    pacienteActual.retos.unshift(retoAI); await window._db.guardarPaciente(pacienteActual); paginaRetos()
+  } catch(e) { alert('Error al generar reto. Intenta de nuevo.'); if(btn){btn.disabled=false;btn.textContent='Generar reto con AI'} }
 }
 
 function paginaRetos() {
-  if (!pacienteActual) {
-    app.innerHTML = `<div class="card" style="text-align:center"><h2>🔥 Retos</h2><p style="color:#888">Inicia sesión como paciente para ver tus retos.</p></div>`
-    return
-  }
-  if (!pacienteActual.retos) pacienteActual.retos = [
-    {titulo:"Completa todas tus comidas 7 días seguidos",descripcion:"Marca las 5 comidas del día durante una semana completa.",duracion:"7 días",dificultad:"Medio",completado:false,esAI:false,fechaCreado:new Date().toDateString()},
-    {titulo:"Toma 8 vasos de agua al día",descripcion:"Mantente hidratado bebiendo al menos 2 litros de agua diariamente durante 5 días.",duracion:"5 días",dificultad:"Fácil",completado:false,esAI:false,fechaCreado:new Date().toDateString()},
-    {titulo:"Sin azúcar refinada por 3 días",descripcion:"Evita dulces, refrescos y postres durante 3 días consecutivos.",duracion:"3 días",dificultad:"Difícil",completado:false,esAI:false,fechaCreado:new Date().toDateString()},
+  if (!pacienteActual) { app.innerHTML=`<div class="card" style="text-align:center"><div class="card-title">Retos</div><p style="color:var(--text3);margin-top:10px">Inicia sesión como paciente para ver tus retos.</p></div>`; return }
+  buildSidebarPaciente('retos')
+  if (!pacienteActual.retos) pacienteActual.retos=[
+    {titulo:'Completa todas tus comidas 7 días seguidos',descripcion:'Marca las 5 comidas del día durante una semana completa.',duracion:'7 días',dificultad:'Medio',completado:false,esAI:false,fechaCreado:new Date().toDateString()},
+    {titulo:'Toma 8 vasos de agua al día',descripcion:'Mantente hidratado bebiendo al menos 2 litros de agua diariamente durante 5 días.',duracion:'5 días',dificultad:'Fácil',completado:false,esAI:false,fechaCreado:new Date().toDateString()},
+    {titulo:'Sin azúcar refinada por 3 días',descripcion:'Evita dulces, refrescos y postres durante 3 días consecutivos.',duracion:'3 días',dificultad:'Difícil',completado:false,esAI:false,fechaCreado:new Date().toDateString()},
   ]
-  let retos = pacienteActual.retos
-  let totalRetos = pacienteActual.retosCompletados || 0
-  let insHtml = INSIGNIAS.map(ins => {
-    let tiene = tieneInsignia(pacienteActual, ins.id)
-    return `<div title="${ins.desc}" style="text-align:center;opacity:${tiene?1:0.25};filter:${tiene?"none":"grayscale(1)"};padding:6px;"><div style="font-size:28px">${ins.emoji}</div><div style="font-size:10px;color:#666">${ins.nombre}</div></div>`
-  }).join("")
-
-  window._db.getTodosPacientes().then(todos => {
-    let ranking = todos.sort((a,b) => (b.retosCompletados||0)-(a.retosCompletados||0))
-    let rankHtml = ranking.slice(0,5).map((p,i) => {
-      let medal = ["🥇","🥈","🥉","4️⃣","5️⃣"][i]
-      let esActual = p.usuario === pacienteActual.usuario
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:8px;background:${esActual?"#e8f5e9":"#f9f9f9"};margin-bottom:6px;"><span>${medal} <b>${p.nombre}</b>${esActual?" (tú)":""}</span><span style="background:#4CAF50;color:white;border-radius:12px;padding:2px 10px;font-size:13px;">${p.retosCompletados||0} retos</span></div>`
-    }).join("")
-    let rankDiv = document.getElementById("ranking-retos")
-    if (rankDiv) rankDiv.innerHTML = rankHtml || "<p style=\"color:#aaa\">Aún no hay datos.</p>"
+  let retos=pacienteActual.retos, totalRetos=pacienteActual.retosCompletados||0
+  let insHtml=INSIGNIAS.map(ins=>{let t=tieneInsignia(pacienteActual,ins.id);return`<div title="${ins.desc}" style="text-align:center;opacity:${t?1:.25};filter:${t?'none':'grayscale(1)'};padding:8px"><div style="font-size:26px">${ins.emoji}</div><div style="font-size:10px;color:var(--text3);margin-top:3px">${ins.nombre}</div></div>`}).join('')
+  window._db.getTodosPacientes().then(todos=>{
+    let rankHtml=todos.sort((a,b)=>(b.retosCompletados||0)-(a.retosCompletados||0)).slice(0,5).map((p,i)=>{
+      let medal=['🥇','🥈','🥉','4️⃣','5️⃣'][i], esActual=p.usuario===pacienteActual.usuario
+      return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:var(--radius-sm);background:${esActual?'var(--green-light)':'var(--surface2)'};margin-bottom:5px"><span>${medal} <b>${p.nombre}</b>${esActual?' (tú)':''}</span><span class="badge badge-green">${p.retosCompletados||0} retos</span></div>`
+    }).join('')
+    let rankDiv=document.getElementById('ranking-retos'); if(rankDiv) rankDiv.innerHTML=rankHtml||'<p style="color:var(--text3)">Sin datos</p>'
   })
-
-  let retosHtml = retos.map((r,i) => {
-    let difColor = r.dificultad=="Fácil"?"#66BB6A":r.dificultad=="Medio"?"#FFA726":"#EF5350"
-    return `<div style="border:1px solid #eee;border-radius:10px;padding:14px;margin-bottom:10px;background:${r.completado?"#f1f8e9":"white"}">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-        <b>${r.esAI?"🤖 ":""}${r.titulo}</b>
-        <span style="font-size:11px;background:${difColor};color:white;padding:2px 8px;border-radius:10px;">${r.dificultad}</span>
-      </div>
-      <p style="font-size:13px;color:#666;margin:6px 0">${r.descripcion}</p>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:12px;color:#aaa">⏱ ${r.duracion}</span>
-        ${r.completado?`<span style="color:#4CAF50;font-weight:700">✅ Completado</span>`:`<button onclick="completarReto(${i})" style="background:#4CAF50;padding:7px 14px;font-size:13px;">Marcar como hecho ✓</button>`}
-      </div>
-    </div>`
-  }).join("")
-
-  app.innerHTML = `
-  <div class="card">
-    <h2>🔥 Retos</h2>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <div style="background:#e8f5e9;border-radius:10px;padding:12px 20px;flex:1;text-align:center;"><div style="font-size:28px;font-weight:900;color:#2e7d32">${totalRetos}</div><div style="font-size:12px;color:#666">Completados</div></div>
-      <div style="background:#fff8e1;border-radius:10px;padding:12px 20px;flex:1;text-align:center;"><div style="font-size:28px;font-weight:900;color:#f57f17">${retos.filter(r=>!r.completado).length}</div><div style="font-size:12px;color:#666">Pendientes</div></div>
-      <div style="background:#e3f2fd;border-radius:10px;padding:12px 20px;flex:1;text-align:center;"><div style="font-size:28px;font-weight:900;color:#1565c0">${(pacienteActual.insignias||[]).length}</div><div style="font-size:12px;color:#666">Insignias</div></div>
+  let difColor={Fácil:'var(--green)',Medio:'var(--gold)',Difícil:'var(--red)'}
+  let retosHtml=retos.map((r,i)=>`
+  <div style="border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;background:${r.completado?'var(--green-light)':'var(--surface)'}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+      <b style="font-size:13.5px">${r.esAI?'<span style="background:var(--blue-light);color:var(--blue);font-size:10px;padding:1px 7px;border-radius:99px;font-weight:700">AI</span> ':''}${r.titulo}</b>
+      <span style="background:${difColor[r.dificultad]||'var(--gold)'};color:white;border-radius:99px;font-size:10px;font-weight:700;padding:2px 9px;flex-shrink:0">${r.dificultad}</span>
     </div>
+    <p style="font-size:12.5px;color:var(--text2);margin-bottom:10px">${r.descripcion}</p>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;color:var(--text3)">${r.duracion}</span>
+      ${r.completado?`<span style="color:var(--green);font-weight:700;font-size:13px">${icon('check')} Completado</span>`:`<button class="btn btn-primary btn-sm" onclick="completarReto(${i})">Marcar como hecho</button>`}
+    </div>
+  </div>`).join('')
+  app.innerHTML=`
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:0">
+    <div class="card" style="text-align:center;margin-top:0"><div style="font-size:26px;font-weight:800;color:var(--green)">${totalRetos}</div><div style="font-size:11px;color:var(--text3)">Completados</div></div>
+    <div class="card" style="text-align:center;margin-top:0"><div style="font-size:26px;font-weight:800;color:var(--gold)">${retos.filter(r=>!r.completado).length}</div><div style="font-size:11px;color:var(--text3)">Pendientes</div></div>
+    <div class="card" style="text-align:center;margin-top:0"><div style="font-size:26px;font-weight:800;color:var(--blue)">${(pacienteActual.insignias||[]).length}</div><div style="font-size:11px;color:var(--text3)">Insignias</div></div>
   </div>
+  <div class="card"><div class="card-header"><div class="card-title">Mis insignias</div></div><div style="display:flex;flex-wrap:wrap;justify-content:space-around">${insHtml}</div></div>
+  <div class="card"><div class="card-header"><div class="card-title">Tabla de posiciones</div></div><div id="ranking-retos"><p style="color:var(--text3)">Cargando...</p></div></div>
   <div class="card">
-    <h3>🎖️ Mis insignias</h3>
-    <div style="display:flex;flex-wrap:wrap;justify-content:space-around;">${insHtml}</div>
-  </div>
-  <div class="card">
-    <h3>🏆 Tabla de posiciones</h3>
-    <div id="ranking-retos"><p style="color:#aaa">Cargando...</p></div>
-  </div>
-  <div class="card">
-    <h3>💪 Mis retos</h3>
-    ${tieneAI() ? `<button id="btn-generar-ai" onclick="generarRetoAI()" style="background:#7C4DFF;width:100%;margin-bottom:12px;">🤖 Generar reto personalizado con AI</button>` : `<div class="ai-locked" style="margin-bottom:12px;">🔒 Retos AI disponibles en <b>Estándar</b> y <b>Premium</b>. <span style="color:#4CAF50;cursor:pointer;" onclick="verPrecios()">Ver planes →</span></div>`}
+    <div class="card-header"><div class="card-title">Mis retos</div></div>
+    ${tieneAI()?`<button id="btn-generar-ai" class="btn btn-primary btn-full" onclick="generarRetoAI()" style="margin-bottom:14px;background:#7C4DFF">${icon('ai')} Generar reto personalizado con AI</button>`:`<div class="ai-locked" style="margin-bottom:14px">Retos AI disponibles en <b>Estándar</b> y <b>Premium</b>. <span style="color:var(--green);font-weight:600;cursor:pointer" onclick="verPrecios()">Ver planes →</span></div>`}
     ${retosHtml}
   </div>`
 }
 
 function reto() { paginaRetos() }
-function modoOscuro() { document.body.classList.toggle("dark") }
+function modoOscuro() { document.body.classList.toggle('dark') }
 
-function tieneAI() {
-  return ['estandar','premium'].includes(pacienteActual?.plan)
-}
-
+/* ═══════════════════════════════════════
+   FUNCIONES AI
+═══════════════════════════════════════ */
 async function analisisProgreso() {
   if (!tieneAI()) return
+  buildSidebarPaciente('ai')
   app.innerHTML = `
   <div class="card">
-    <button onclick="panelPaciente()">⬅ Volver</button>
-    <h2>📊 Análisis AI de tu progreso</h2>
-    <div id="analisis-resultado" style="margin-top:15px;padding:16px;background:#f1f8e9;border-radius:10px;color:#33691e;font-size:15px;line-height:1.7;">
-      <i>⏳ Analizando tu progreso...</i>
+    <button class="btn btn-ghost" onclick="panelPaciente()" style="margin-bottom:14px">${icon('back')} Volver</button>
+    <div class="card-header"><div class="card-title">Análisis AI de tu progreso</div></div>
+    <div id="analisis-resultado" style="margin-top:8px;padding:16px;background:var(--green-light);border-radius:var(--radius);color:var(--green-dark);font-size:14px;line-height:1.7">
+      <i>Analizando tu progreso...</i>
     </div>
   </div>`
-
-  let hoy = diaActual()
-  let marcadas = Object.values(pacienteActual.comidas).filter(v => v).length
-  let dietaHoy = pacienteActual.dietasemanal?.[hoy] || {}
-
-  let promptText = `Eres un nutricionista experto. Analiza el progreso de este paciente y da retroalimentación motivadora y consejos concretos en español.\nDatos del paciente:\n- Nombre: ${pacienteActual.nombre}\n- Objetivo: ${pacienteActual.objetivo}\n- Calorías diarias: ${pacienteActual.calorias} kcal\n- Progreso de hoy: ${pacienteActual.progreso}% (${marcadas}/5 comidas marcadas)\n- Racha actual: ${pacienteActual.racha} días consecutivos completados\n- Dieta de hoy (${hoy}): Desayuno: ${dietaHoy.desayuno||'no asignado'}, Almuerzo: ${dietaHoy.almuerzo||'no asignado'}, Cena: ${dietaHoy.cena||'no asignado'}\nDa un análisis breve (3-4 párrafos) con: evaluación del día, motivación según su racha, y 2 consejos prácticos.`
-
+  let hoy=diaActual(), marcadas=Object.values(pacienteActual.comidas).filter(v=>v).length, dietaHoy=pacienteActual.dietasemanal?.[hoy]||{}
+  let promptText=`Eres un nutricionista experto. Analiza el progreso de este paciente y da retroalimentación motivadora en español.\nDatos:\n- Nombre: ${pacienteActual.nombre}\n- Objetivo: ${pacienteActual.objetivo}\n- Calorías diarias: ${pacienteActual.calorias} kcal\n- Progreso hoy: ${pacienteActual.progreso}% (${marcadas}/5 comidas)\n- Racha: ${pacienteActual.racha} días\n- Dieta hoy (${hoy}): Desayuno: ${dietaHoy.desayuno||'no asignado'}, Almuerzo: ${dietaHoy.almuerzo||'no asignado'}, Cena: ${dietaHoy.cena||'no asignado'}\nDa un análisis breve (3-4 párrafos) con evaluación del día, motivación y 2 consejos prácticos.`
   try {
-    const res = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, messages:[{role:"user", content:promptText}] })
-    })
-    const data = await res.json()
-    const texto = data.content.map(b => b.text || '').join('')
-    document.getElementById("analisis-resultado").innerHTML = texto.replace(/\n/g, '<br>')
-  } catch(e) {
-    document.getElementById("analisis-resultado").innerHTML = "❌ Error al conectar con AI. Intenta de nuevo."
-  }
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:promptText}]})})
+    const data=await res.json()
+    document.getElementById('analisis-resultado').innerHTML=data.content.map(b=>b.text||'').join('').replace(/\n/g,'<br>')
+  } catch(e) { document.getElementById('analisis-resultado').innerHTML='Error al conectar con AI. Intenta de nuevo.' }
 }
 
 async function chatNutriAI() {
   if (!tieneAI()) return
-  chatHistory = []
-  renderChat()
+  chatHistory=[]; buildSidebarPaciente('ai'); renderChat()
 }
 
 function renderChat() {
   app.innerHTML = `
   <div class="card">
-    <button onclick="panelPaciente()">⬅ Volver</button>
-    <h2>💬 Nutricionista AI</h2>
-    <p style="font-size:13px;color:#888;margin-top:0">Haz preguntas sobre tu dieta, nutrición o hábitos saludables.</p>
+    <button class="btn btn-ghost" onclick="panelPaciente()" style="margin-bottom:14px">${icon('back')} Volver</button>
+    <div class="card-header"><div class="card-title">Nutricionista AI</div></div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:10px">Haz preguntas sobre tu dieta, nutrición o hábitos saludables.</p>
     <div class="chat-box" id="chat-box">
-      <div class="msg ai">¡Hola ${pacienteActual.nombre}! 👋 Soy tu nutricionista AI. ¿En qué puedo ayudarte hoy?</div>
+      <div class="msg ai">Hola ${pacienteActual.nombre}. Soy tu nutricionista AI. ¿En qué puedo ayudarte hoy?</div>
     </div>
-    <div class="chat-input-row">
-      <input id="chat-input" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter') enviarChat()">
-      <button onclick="enviarChat()">Enviar ➤</button>
+    <div class="chat-input-row" style="margin-top:10px">
+      <input id="chat-input" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter')enviarChat()">
+      <button class="btn btn-primary" onclick="enviarChat()">Enviar</button>
     </div>
   </div>`
 }
 
 async function enviarChat() {
-  let input = document.getElementById("chat-input")
-  let texto = input.value.trim()
-  if (!texto) return
-  input.value = ""
-  let box = document.getElementById("chat-box")
-  let msgUser = document.createElement("div")
-  msgUser.className = "msg user"
-  msgUser.textContent = texto
-  box.appendChild(msgUser)
-  let msgLoading = document.createElement("div")
-  msgLoading.className = "msg loading"
-  msgLoading.textContent = "✍️ Escribiendo..."
-  box.appendChild(msgLoading)
-  box.scrollTop = box.scrollHeight
-  chatHistory.push({ role:"user", content: texto })
-
-  let systemPrompt = `Eres un nutricionista amable y experto. Responde en español de forma concisa (máximo 3 oraciones).\nContexto del paciente: Nombre: ${pacienteActual.nombre}, Objetivo: ${pacienteActual.objetivo}, Calorías: ${pacienteActual.calorias} kcal/día, Plan: ${pacienteActual.plan}.`
-
+  let input=document.getElementById('chat-input'), texto=input.value.trim()
+  if (!texto) return; input.value=''
+  let box=document.getElementById('chat-box')
+  let msgUser=document.createElement('div'); msgUser.className='msg user'; msgUser.textContent=texto; box.appendChild(msgUser)
+  let msgLoading=document.createElement('div'); msgLoading.className='msg loading'; msgLoading.textContent='Escribiendo...'; box.appendChild(msgLoading)
+  box.scrollTop=box.scrollHeight; chatHistory.push({role:'user',content:texto})
+  let systemPrompt=`Eres un nutricionista amable y experto. Responde en español de forma concisa (máximo 3 oraciones).\nContexto: Nombre: ${pacienteActual.nombre}, Objetivo: ${pacienteActual.objetivo}, Calorías: ${pacienteActual.calorias} kcal/día, Plan: ${pacienteActual.plan}.`
   try {
-    const res = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, system: systemPrompt, messages: chatHistory })
-    })
-    const data = await res.json()
-    const respuesta = data.content.map(b => b.text || '').join('')
-    chatHistory.push({ role:"assistant", content: respuesta })
-    msgLoading.remove()
-    let msgAI = document.createElement("div")
-    msgAI.className = "msg ai"
-    msgAI.textContent = respuesta
-    box.appendChild(msgAI)
-    box.scrollTop = box.scrollHeight
-  } catch(e) {
-    msgLoading.textContent = "❌ Error al conectar. Intenta de nuevo."
-  }
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:systemPrompt,messages:chatHistory})})
+    const data=await res.json(), respuesta=data.content.map(b=>b.text||'').join('')
+    chatHistory.push({role:'assistant',content:respuesta}); msgLoading.remove()
+    let msgAI=document.createElement('div'); msgAI.className='msg ai'; msgAI.textContent=respuesta; box.appendChild(msgAI); box.scrollTop=box.scrollHeight
+  } catch(e) { msgLoading.textContent='Error al conectar. Intenta de nuevo.' }
 }
 
-// ===== ARRANCAR APP =====
-// La app arranca INMEDIATAMENTE, Firebase conecta en segundo plano
+/* ═══════════════════════════════════════
+   ARRANCAR APP
+═══════════════════════════════════════ */
 ocultarLoader()
 inicio()
 </script>
