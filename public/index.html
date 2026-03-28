@@ -162,14 +162,16 @@ body {
 #btn-hamburger { display: none; }
 
 /* ═══════════════════════════════════════
-   SIDEBAR
+   SIDEBAR — ENTERPRISE PREMIUM
 ═══════════════════════════════════════ */
 #sidebar-overlay {
   position: fixed; inset: 0;
-  background: rgba(15,23,42,.45);
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 490;
   opacity: 0; pointer-events: none;
-  transition: opacity .25s ease;
+  transition: opacity .3s ease;
 }
 #sidebar-overlay.active { opacity: 1; pointer-events: all; }
 
@@ -177,69 +179,227 @@ body {
   position: fixed;
   top: 0; left: 0; bottom: 0;
   width: var(--sidebar-w);
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-right: 1px solid rgba(226,232,240,.8);
   z-index: 500;
   display: flex; flex-direction: column;
   transform: translateX(-100%);
-  transition: transform .28s cubic-bezier(.4,0,.2,1);
+  transition: transform .32s cubic-bezier(.22,1,.36,1);
   overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: none;
 }
-#sidebar.open { transform: translateX(0); box-shadow: var(--shadow-lg); }
+#sidebar.open {
+  transform: translateX(0);
+  box-shadow: 20px 0 60px rgba(15,23,42,.14), 4px 0 16px rgba(15,23,42,.06);
+}
 
-/* Perfil en sidebar */
+/* Perfil premium */
 .sb-profile {
-  display: flex; align-items: center; gap: 11px;
-  padding: 20px 16px 16px;
+  padding: 22px 16px 18px;
   border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
 }
+.sb-profile::before {
+  content: '';
+  position: absolute; top: -30px; right: -30px;
+  width: 100px; height: 100px;
+  background: radial-gradient(circle, rgba(22,163,74,.12) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.sb-profile-inner { display: flex; align-items: center; gap: 11px; position: relative; }
 .sb-avatar {
-  width: 40px; height: 40px; border-radius: 10px;
+  width: 42px; height: 42px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+  color: #fff;
+  font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(22,163,74,.35), 0 1px 3px rgba(22,163,74,.2);
+  position: relative;
+}
+.sb-avatar::after {
+  content: '';
+  position: absolute; bottom: -2px; right: -2px;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #fff;
+}
+.sb-name { font-size: 13.5px; font-weight: 700; color: var(--text); line-height: 1.3; letter-spacing: -.1px; }
+.sb-role { font-size: 11px; color: var(--text3); margin-top: 1px; font-weight: 500; }
+.sb-plan-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 99px;
+  font-size: 9px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase;
+  margin-top: 5px;
+}
+.sb-plan-badge.basico   { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+.sb-plan-badge.estandar { background: linear-gradient(90deg,#fef3c7,#fde68a); color: #92400e; border: 1px solid #fcd34d; }
+.sb-plan-badge.premium  { background: linear-gradient(90deg,#dcfce7,#bbf7d0); color: var(--green-dark); border: 1px solid var(--green-muted); }
+
+/* Secciones sidebar */
+.sb-section { padding: 8px 0; border-bottom: 1px solid rgba(226,232,240,.6); }
+.sb-section:last-child { border-bottom: none; padding-bottom: 20px; }
+.sb-section-label {
+  font-size: 9px; font-weight: 800; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text3);
+  padding: 6px 20px 6px;
+}
+
+/* ─── BOTÓN SIDEBAR PREMIUM ─── */
+.sb-item {
+  position: relative;
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 14px; margin: 2px 10px;
+  border-radius: 10px;
+  font-size: 13.5px; font-weight: 500; color: var(--text2);
+  cursor: pointer;
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+  border: 1px solid transparent;
+  background: transparent;
+  width: calc(100% - 20px);
+  text-align: left; font-family: 'Inter', sans-serif;
+  outline: none;
+  overflow: hidden;
+  letter-spacing: -.1px;
+}
+
+/* Línea izquierda acento */
+.sb-item::before {
+  content: '';
+  position: absolute; left: 0; top: 50%;
+  width: 3px; height: 0; border-radius: 0 3px 3px 0;
+  background: var(--green);
+  transform: translateY(-50%);
+  transition: height .2s cubic-bezier(.4,0,.2,1);
+}
+
+/* Fondo hover shimmer */
+.sb-item::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(22,163,74,.04) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity .2s ease;
+  pointer-events: none;
+}
+
+.sb-item:hover {
+  background: rgba(241,245,249,.85);
+  color: var(--text);
+  border-color: rgba(226,232,240,.8);
+  transform: translateX(2px);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.sb-item:hover::before { height: 60%; }
+.sb-item:hover::after { opacity: 1; }
+
+.sb-item.active {
+  background: linear-gradient(90deg, rgba(220,252,231,.9) 0%, rgba(220,252,231,.4) 100%);
+  color: var(--green-dark);
+  font-weight: 700;
+  border-color: rgba(187,247,208,.8);
+  box-shadow: 0 2px 8px rgba(22,163,74,.10), inset 0 1px 0 rgba(255,255,255,.6);
+}
+.sb-item.active::before { height: 65%; }
+.sb-item.active svg { stroke: var(--green-dark); }
+
+/* Ícono wrapper */
+.sb-item .sb-icon-wrap {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  background: var(--surface2);
+  transition: all .2s ease;
+}
+.sb-item:hover .sb-icon-wrap {
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.sb-item.active .sb-icon-wrap {
+  background: var(--green);
+  box-shadow: 0 2px 8px rgba(22,163,74,.3);
+}
+.sb-item.active .sb-icon-wrap svg { stroke: white; }
+
+.sb-item svg { flex-shrink: 0; transition: all .2s ease; }
+.sb-item:not(.active) svg { opacity: .65; }
+.sb-item:hover svg { opacity: 1; }
+
+/* Texto label */
+.sb-item .sb-label { flex: 1; }
+
+/* Badge numérico en ítem */
+.sb-item .sb-badge {
   background: var(--green); color: #fff;
-  font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700;
+  font-size: 9.5px; font-weight: 800;
+  padding: 1px 6px; border-radius: 99px;
+  min-width: 18px; text-align: center;
+  line-height: 1.5;
+}
+
+/* Botón danger premium */
+.sb-item.danger { color: #ef4444; }
+.sb-item.danger .sb-icon-wrap { background: #fee2e2; }
+.sb-item.danger .sb-icon-wrap svg { stroke: #ef4444; opacity: 1; }
+.sb-item.danger::before { background: #ef4444; }
+.sb-item.danger:hover {
+  background: rgba(254,226,226,.5);
+  color: #dc2626;
+  border-color: rgba(254,202,202,.6);
+}
+.sb-item.danger:hover .sb-icon-wrap { background: #fca5a5; box-shadow: 0 1px 4px rgba(220,38,38,.15); }
+
+/* Botón CTA dentro de sidebar (upgrade) */
+.sb-cta-btn {
+  display: flex; align-items: center; gap: 9px;
+  margin: 4px 10px 2px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
+  color: #fff;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; border: none;
+  width: calc(100% - 20px);
+  text-align: left; font-family: 'Inter', sans-serif;
+  transition: all .22s ease;
+  box-shadow: 0 4px 14px rgba(22,163,74,.3), 0 1px 3px rgba(22,163,74,.2), inset 0 1px 0 rgba(255,255,255,.15);
+  position: relative; overflow: hidden;
+  letter-spacing: -.1px;
+}
+.sb-cta-btn::before {
+  content: '';
+  position: absolute; top: -50%; left: -60%;
+  width: 50%; height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+  transform: skewX(-20deg);
+  transition: left .5s ease;
+}
+.sb-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(22,163,74,.38), 0 2px 6px rgba(22,163,74,.2); }
+.sb-cta-btn:hover::before { left: 140%; }
+.sb-cta-btn .sb-cta-icon {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: rgba(255,255,255,.18);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.sb-name { font-size: 13.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
-.sb-role { font-size: 11px; color: var(--text3); margin-top: 1px; }
-.sb-plan-badge {
-  display: inline-flex; align-items: center;
-  padding: 1px 7px; border-radius: 99px;
-  font-size: 9.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
-  margin-top: 3px;
-}
-.sb-plan-badge.basico   { background: var(--surface2); color: var(--text2); }
-.sb-plan-badge.estandar { background: var(--gold-light); color: var(--gold); }
-.sb-plan-badge.premium  { background: var(--green-light); color: var(--green-dark); }
 
-/* Secciones sidebar */
-.sb-section { padding: 10px 0; border-bottom: 1px solid var(--border); }
-.sb-section:last-child { border-bottom: none; }
-.sb-section-label {
-  font-size: 9.5px; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--text3);
-  padding: 0 16px 6px;
+/* Separador con label */
+.sb-divider {
+  height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 4px 16px;
 }
 
-.sb-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 16px; margin: 1px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 13.5px; font-weight: 500; color: var(--text2);
-  cursor: pointer; transition: var(--trans);
-  border: none; background: transparent; width: calc(100% - 16px);
-  text-align: left; font-family: 'Inter', sans-serif;
+/* Indicador "nuevo" */
+.sb-new-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: sbPulse 2s ease infinite;
+  flex-shrink: 0;
 }
-.sb-item:hover { background: var(--surface2); color: var(--text); }
-.sb-item.active {
-  background: var(--green-light); color: var(--green-dark); font-weight: 600;
-}
-.sb-item.active svg { stroke: var(--green-dark); }
-.sb-item svg { flex-shrink: 0; opacity: .7; transition: var(--trans); }
-.sb-item:hover svg, .sb-item.active svg { opacity: 1; }
-.sb-item.danger { color: var(--red); }
-.sb-item.danger:hover { background: var(--red-light); color: var(--red); }
-.sb-item.danger svg { opacity: 1; }
+@keyframes sbPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
 
 /* ═══════════════════════════════════════
    CONTENIDO PRINCIPAL
@@ -680,6 +840,15 @@ body.dark .card { background: var(--surface); }
 body.dark .chat-box { background: var(--surface2); }
 body.dark .input-field, body.dark input, body.dark select { background: var(--surface2); color: var(--text); border-color: var(--border2); }
 body.dark .plan-card { background: var(--surface); }
+/* Dark mode sidebar overrides */
+body.dark #sidebar { background: linear-gradient(180deg, #1e293b 0%, #172032 100%); border-right-color: #2d3f5f; }
+body.dark .sb-profile::before { background: radial-gradient(circle, rgba(22,163,74,.08) 0%, transparent 70%); }
+body.dark .sb-item:hover { background: rgba(30,41,59,.9); border-color: #2d3f5f; }
+body.dark .sb-item.active { background: linear-gradient(90deg, rgba(5,46,22,.9) 0%, rgba(5,46,22,.4) 100%); border-color: rgba(20,83,45,.6); }
+body.dark .sb-item .sb-icon-wrap { background: #243252; }
+body.dark .sb-item:hover .sb-icon-wrap { background: #2d3f5f; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+body.dark .sb-cta-btn { box-shadow: 0 4px 14px rgba(22,163,74,.2), inset 0 1px 0 rgba(255,255,255,.1); }
+body.dark .sb-avatar::after { border-color: #1e293b; }
 
 /* ═══════════════════════════════════════
    RESPONSIVE
@@ -794,57 +963,62 @@ function icon(name) { return ICONS[name] || '' }
 function buildSidebarNutri(activeSection) {
   const plan = nutriActual?.plan || 'basico'
   const planLabel = { basico:'Básico', estandar:'Estándar', premium:'Premium' }[plan] || plan
-  const planBadge = `<span class="sb-plan-badge ${plan}">${planLabel}</span>`
+  const planEmoji = { basico:'◈', estandar:'◆', premium:'⬟' }[plan] || '◈'
+  const planBadge = `<span class="sb-plan-badge ${plan}">${planEmoji} ${planLabel}</span>`
   const initial = (nutriActual?.user || 'N')[0].toUpperCase()
+  const sbItem = (section, fn, iconName, label, opts={}) => {
+    const isActive = activeSection === section
+    const badge = opts.badge ? `<span class="sb-badge">${opts.badge}</span>` : ''
+    const newDot = opts.isNew ? `<span class="sb-new-dot"></span>` : ''
+    return `<button class="sb-item ${isActive?'active':''}" onclick="${fn};closeSidebar()">
+      <span class="sb-icon-wrap">${icon(iconName)}</span>
+      <span class="sb-label">${label}</span>${badge}${newDot}
+    </button>`
+  }
 
   document.getElementById('sidebar').innerHTML = `
     <div class="sb-profile">
-      <div class="sb-avatar">${initial}</div>
-      <div>
-        <div class="sb-name">${nutriActual?.user || 'Nutricionista'}</div>
-        <div class="sb-role">Nutricionista</div>
-        ${planBadge}
+      <div class="sb-profile-inner">
+        <div class="sb-avatar">${initial}</div>
+        <div>
+          <div class="sb-name">${nutriActual?.user || 'Nutricionista'}</div>
+          <div class="sb-role">Nutricionista Clínico</div>
+          ${planBadge}
+        </div>
       </div>
     </div>
 
     <div class="sb-section">
       <div class="sb-section-label">Principal</div>
-      <button class="sb-item ${activeSection==='dashboard'?'active':''}" onclick="dashboard();closeSidebar()">
-        ${icon('chart')} Dashboard
-      </button>
-      <button class="sb-item ${activeSection==='pacientes'?'active':''}" onclick="dashboard();closeSidebar()">
-        ${icon('users')} Mis pacientes
-      </button>
+      ${sbItem('dashboard', 'dashboard()', 'chart', 'Dashboard')}
+      ${sbItem('pacientes', 'dashboard()', 'users', 'Mis pacientes')}
     </div>
 
     <div class="sb-section">
       <div class="sb-section-label">Herramientas</div>
-      <button class="sb-item" onclick="closeSidebar()">
-        ${icon('clipboard')} Dietas semanales
-      </button>
-      <button class="sb-item" onclick="closeSidebar()">
-        ${icon('bell')} Notificaciones
-      </button>
+      ${sbItem('', 'closeSidebar()', 'clipboard', 'Dietas semanales', {isNew:true})}
+      ${sbItem('', 'closeSidebar()', 'bell', 'Notificaciones', {badge:'3'})}
     </div>
 
     <div class="sb-section">
       <div class="sb-section-label">Reportes</div>
-      <button class="sb-item ${activeSection==='ranking'?'active':''}" onclick="ranking();closeSidebar()">
-        ${icon('trophy')} Ranking global
-      </button>
+      ${sbItem('ranking', 'ranking()', 'trophy', 'Ranking global')}
     </div>
 
     <div class="sb-section">
       <div class="sb-section-label">Cuenta</div>
-      <button class="sb-item" onclick="verPrecios();closeSidebar()">
-        ${icon('star')} Ver planes
+      <button class="sb-cta-btn" onclick="verPrecios();closeSidebar()">
+        <span class="sb-cta-icon">${icon('star')}</span>
+        <span>Mejorar plan</span>
       </button>
-      <button class="sb-item danger" onclick="cerrarSesion()">
-        ${icon('logout')} Cerrar sesión
-      </button>
+      ${sbItem('', 'cerrarSesion()', 'logout', 'Cerrar sesión', {})}
     </div>
   `
-  // Mostrar hamburger y badge live
+  document.getElementById('sidebar').querySelector('.sb-item.danger') && null
+  // Marcar cerrar sesión como danger manualmente
+  const allItems = document.getElementById('sidebar').querySelectorAll('.sb-item')
+  allItems[allItems.length-1].classList.add('danger')
+
   document.getElementById('btn-hamburger').style.display = 'flex'
   document.getElementById('sync-badge').style.display = 'flex'
 }
@@ -853,54 +1027,64 @@ function buildSidebarNutri(activeSection) {
 function buildSidebarPaciente(activeSection) {
   const plan = pacienteActual?.plan || 'basico'
   const planLabel = { basico:'Básico', estandar:'Estándar', premium:'Premium' }[plan] || plan
-  const planBadge = `<span class="sb-plan-badge ${plan}">${planLabel}</span>`
+  const planEmoji = { basico:'◈', estandar:'◆', premium:'⬟' }[plan] || '◈'
+  const planBadge = `<span class="sb-plan-badge ${plan}">${planEmoji} ${planLabel}</span>`
   const initial = (pacienteActual?.nombre || 'P')[0].toUpperCase()
   const hasAI = ['estandar','premium'].includes(plan)
+  const racha = pacienteActual?.racha || 0
+
+  const sbItem = (section, fn, iconName, label, opts={}) => {
+    const isActive = activeSection === section
+    const badge = opts.badge ? `<span class="sb-badge">${opts.badge}</span>` : ''
+    const newDot = opts.isNew ? `<span class="sb-new-dot"></span>` : ''
+    return `<button class="sb-item ${isActive?'active':''}" onclick="${fn};closeSidebar()">
+      <span class="sb-icon-wrap">${icon(iconName)}</span>
+      <span class="sb-label">${label}</span>${badge}${newDot}
+    </button>`
+  }
 
   document.getElementById('sidebar').innerHTML = `
     <div class="sb-profile">
-      <div class="sb-avatar">${initial}</div>
-      <div>
-        <div class="sb-name">${pacienteActual?.nombre || 'Paciente'}</div>
-        <div class="sb-role">Paciente</div>
-        ${planBadge}
+      <div class="sb-profile-inner">
+        <div class="sb-avatar">${initial}</div>
+        <div>
+          <div class="sb-name">${pacienteActual?.nombre || 'Paciente'}</div>
+          <div class="sb-role">Paciente · ${racha > 0 ? '🔥 '+racha+' días' : 'Sin racha aún'}</div>
+          ${planBadge}
+        </div>
       </div>
     </div>
 
     <div class="sb-section">
       <div class="sb-section-label">Mi día</div>
-      <button class="sb-item ${activeSection==='home'?'active':''}" onclick="panelPaciente();closeSidebar()">
-        ${icon('home')} Inicio
-      </button>
-      <button class="sb-item ${activeSection==='comidas'?'active':''}" onclick="panelPaciente();closeSidebar()">
-        ${icon('food')} Mis comidas
-      </button>
+      ${sbItem('home', 'panelPaciente()', 'home', 'Inicio')}
+      ${sbItem('comidas', 'panelPaciente()', 'food', 'Mis comidas')}
     </div>
 
     <div class="sb-section">
       <div class="sb-section-label">Progreso</div>
-      <button class="sb-item ${activeSection==='retos'?'active':''}" onclick="paginaRetos();closeSidebar()">
-        ${icon('fire')} Retos
-      </button>
-      <button class="sb-item ${activeSection==='ranking'?'active':''}" onclick="ranking();closeSidebar()">
-        ${icon('trophy')} Ranking
-      </button>
+      ${sbItem('retos', 'paginaRetos()', 'fire', 'Retos', {badge: pacienteActual?.retos?.filter(r=>!r.completado).length || ''})}
+      ${sbItem('ranking', 'ranking()', 'trophy', 'Ranking')}
       ${hasAI ? `
-      <button class="sb-item ${activeSection==='ai'?'active':''}" onclick="analisisProgreso();closeSidebar()">
-        ${icon('ai')} Análisis AI
-      </button>
-      <button class="sb-item" onclick="chatNutriAI();closeSidebar()">
-        ${icon('ai')} Chat AI
-      </button>` : ''}
+      ${sbItem('ai', 'analisisProgreso()', 'ai', 'Análisis AI', {isNew:true})}
+      ${sbItem('chat', 'chatNutriAI()', 'ai', 'Chat Nutricionista')}
+      ` : ''}
     </div>
 
     <div class="sb-section">
       <div class="sb-section-label">Cuenta</div>
+      ${!hasAI ? `
+      <button class="sb-cta-btn" onclick="verPrecios();closeSidebar()">
+        <span class="sb-cta-icon">${icon('star')}</span>
+        <span>Desbloquear AI</span>
+      </button>` : `
       <button class="sb-item" onclick="verPrecios();closeSidebar()">
-        ${icon('star')} Ver planes
-      </button>
+        <span class="sb-icon-wrap">${icon('star')}</span>
+        <span class="sb-label">Ver planes</span>
+      </button>`}
       <button class="sb-item danger" onclick="cerrarSesion()">
-        ${icon('logout')} Cerrar sesión
+        <span class="sb-icon-wrap">${icon('logout')}</span>
+        <span class="sb-label">Cerrar sesión</span>
       </button>
     </div>
   `
