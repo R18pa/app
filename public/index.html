@@ -860,6 +860,46 @@ body.dark .sb-avatar::after { border-color: #1e293b; }
   .planes-grid { grid-template-columns: 1fr; }
   .landing-hero { padding: 32px 16px 60px; }
 }
+
+/* ═══════════════════════════════════════
+   TABS DE NAVEGACIÓN INTERNA
+═══════════════════════════════════════ */
+.nt-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border: 1px solid var(--border);
+}
+.nt-tabs::-webkit-scrollbar { display: none; }
+.nt-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: calc(var(--radius) - 4px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: var(--trans);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nt-tab svg { width: 15px; height: 15px; }
+.nt-tab:hover { color: var(--text); background: rgba(255,255,255,.6); }
+.nt-tab.active {
+  background: var(--surface);
+  color: var(--green-dark);
+  box-shadow: var(--shadow-sm);
+}
 </style>
 </head>
 <body>
@@ -1256,14 +1296,6 @@ function inicio() {
     <p class="landing-subtitle">
       Plataforma profesional para nutricionistas y pacientes. Seguimiento en tiempo real, dietas personalizadas e inteligencia artificial.
     </p>
-    <div class="landing-cta" style="margin-bottom:40px">
-      <button class="btn btn-primary btn-lg" onclick="loginNutri()">
-        ${icon('person')} Soy Nutricionista
-      </button>
-      <button class="btn btn-secondary btn-lg" onclick="loginPaciente()">
-        ${icon('person')} Soy Paciente
-      </button>
-    </div>
     <div class="role-cards">
       <div class="role-card" onclick="loginNutri()">
         <div class="role-icon green">${icon('users')}</div>
@@ -1476,6 +1508,7 @@ async function entrarPaciente() {
 ═══════════════════════════════════════ */
 async function dashboard() {
   limpiarListeners()
+  if (!window._nutriTab) window._nutriTab = 'pacientes'
   mostrarLoader('Cargando dashboard...')
   try {
     let misPacientes = await window._db.getPacientesDeNutri(nutriActual.user)
@@ -1491,174 +1524,131 @@ async function dashboard() {
 }
 
 function renderDashboardCompleto(misPacientes) {
-  let lista = ''
-  misPacientes.forEach(p => {
-    lista += `
-    <div class="card" style="margin-top:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div>
-          <b style="font-size:15px">${p.nombre}</b>
-          <span class="badge badge-${p.plan=='premium'?'green':p.plan=='estandar'?'gold':'muted'}" style="margin-left:8px">${p.plan||'básico'}</span><br>
-          <span style="font-size:12px;color:var(--text3)">${p.fecha === new Date().toDateString() ? p.progreso + '% completado hoy' : 'Sin actividad hoy'}</span>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-secondary btn-sm" onclick="crearDietaSemanal('${p.usuario}')">${icon('clipboard')} Dieta</button>
-          <button class="btn btn-secondary btn-sm" onclick="verNotificaciones('${p.usuario}')">${icon('bell')}</button>
-          <button class="btn btn-secondary btn-sm" onclick="verPaciente('${p.usuario}')">${icon('person')} Ver</button>
-        </div>
-      </div>
-      <div class="progress" style="margin-top:10px">
-        <div class="bar" style="width:${p.fecha===new Date().toDateString()?p.progreso:0}%">
-          ${p.fecha===new Date().toDateString()&&p.progreso>15?p.progreso+'%':''}
-        </div>
-      </div>
-    </div>`
-  })
+  const hasPremiun = nutriActual.plan === 'premium'
+  const total = misPacientes.length
+  const avg   = total ? Math.round(misPacientes.reduce((a,p)=>a+(p.progreso||0),0)/total) : 0
+  const racha = total ? Math.max(...misPacientes.map(p=>p.racha||0)) : 0
+  const activos = misPacientes.filter(p=>p.fecha===new Date().toDateString()).length
 
-  let dashboardPremium = ''
-  if (nutriActual.plan == 'premium') {
-    const total = misPacientes.length
-    const avg   = total ? Math.round(misPacientes.reduce((a,p)=>a+(p.progreso||0),0)/total) : 0
-    const racha = total ? Math.max(...misPacientes.map(p=>p.racha||0)) : 0
-    dashboardPremium = `
-    <div class="card" id="card-dashboard-nutri">
-      <div class="card-header">
-        <div class="card-title">Dashboard Premium</div>
-        <span class="live-badge"><span class="dot"></span>En vivo</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-        <div style="background:var(--green-light);border-radius:var(--radius);padding:14px;text-align:center">
-          <div style="font-size:26px;font-weight:800;color:var(--green-dark)">${total}</div>
-          <div style="font-size:11px;color:var(--text2)">Pacientes</div>
-        </div>
-        <div style="background:var(--blue-light);border-radius:var(--radius);padding:14px;text-align:center">
-          <div style="font-size:26px;font-weight:800;color:var(--blue)">${avg}%</div>
-          <div style="font-size:11px;color:var(--text2)">Promedio</div>
-        </div>
-        <div style="background:var(--gold-light);border-radius:var(--radius);padding:14px;text-align:center">
-          <div style="font-size:26px;font-weight:800;color:var(--gold)">${racha}</div>
-          <div style="font-size:11px;color:var(--text2)">Mejor racha</div>
-        </div>
-      </div>
-      <canvas id="grafica-nutri" height="170"></canvas>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
-        <div>
-          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Mejores rachas</div>
-          <div id="mejores-rachas"></div>
-        </div>
-        <div>
-          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Necesitan atención</div>
-          <div id="peores-rachas"></div>
-        </div>
-      </div>
+  // Obtener tab activo o default
+  const activeTab = window._nutriTab || 'pacientes'
+
+  const tabBtn = (id, label, icon_name) => `
+    <button class="nt-tab ${activeTab===id?'active':''}" onclick="switchNutriTab('${id}')">
+      ${icon(icon_name)} ${label}
+    </button>`
+
+  const statCard = (val, label, color) => `
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 14px;text-align:center;flex:1;min-width:90px">
+      <div style="font-size:26px;font-weight:800;color:${color};letter-spacing:-1px">${val}</div>
+      <div style="font-size:11px;color:var(--text3);font-weight:500;margin-top:3px;text-transform:uppercase;letter-spacing:.4px">${label}</div>
     </div>`
+
+  let tabContent = ''
+
+  if (activeTab === 'pacientes') {
+    const lista = misPacientes.length === 0
+      ? `<div style="text-align:center;padding:40px 20px;color:var(--text3)">
+          <div style="font-size:36px;margin-bottom:12px">👥</div>
+          <div style="font-weight:600;margin-bottom:4px">Sin pacientes aún</div>
+          <div style="font-size:13px">Registra tu primer paciente en la pestaña <b>Nuevo Paciente</b></div>
+        </div>`
+      : misPacientes.map(p => `
+        <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);margin-bottom:10px">
+          <div style="width:40px;height:40px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:var(--green-dark);flex-shrink:0">${(p.nombre||'?')[0].toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:14px">${p.nombre}</div>
+            <div style="font-size:11.5px;color:var(--text3);margin-top:2px">@${p.usuario} · <span class="badge badge-${p.plan=='premium'?'green':p.plan=='estandar'?'gold':'muted'}">${p.plan||'básico'}</span></div>
+            <div style="margin-top:8px;background:var(--surface2);border-radius:99px;height:5px;overflow:hidden">
+              <div style="height:100%;background:var(--green);border-radius:99px;width:${p.fecha===new Date().toDateString()?p.progreso:0}%;transition:width .4s"></div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px">${p.fecha===new Date().toDateString()?p.progreso+'% hoy':'Sin actividad hoy'}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+            <button class="btn btn-secondary btn-sm" onclick="crearDietaSemanal('${p.usuario}')" title="Dieta semanal">${icon('clipboard')}</button>
+            <button class="btn btn-secondary btn-sm" onclick="verNotificaciones('${p.usuario}')" title="Notificaciones">${icon('bell')}</button>
+            <button class="btn btn-secondary btn-sm" onclick="verPaciente('${p.usuario}')" title="Ver perfil">${icon('person')}</button>
+          </div>
+        </div>`).join('')
+    tabContent = `<div class="card"><div class="card-header"><div><div class="card-title">Mis Pacientes</div><div class="card-subtitle">${total} paciente${total!==1?'s':''} registrado${total!==1?'s':''}</div></div><span class="live-badge"><span class="dot"></span>En vivo</span></div>${lista}</div>`
+
+  } else if (activeTab === 'nuevo') {
+    tabContent = `
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Registrar nuevo paciente</div><div class="card-subtitle">Completa todos los datos clínicos</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="input-group"><label class="input-label">Nombre completo</label><input id="nombre" placeholder="Nombre del paciente"></div>
+        <div class="input-group"><label class="input-label">Usuario</label><input id="usuario" placeholder="usuario123"></div>
+        <div class="input-group"><label class="input-label">Contraseña</label><input id="password" type="password" placeholder="••••••"></div>
+        <div class="input-group"><label class="input-label">Edad</label><input id="edad" placeholder="Años" type="number"></div>
+        <div class="input-group"><label class="input-label">Peso (kg)</label><input id="peso" placeholder="Kg" type="number"></div>
+        <div class="input-group"><label class="input-label">Altura (cm)</label><input id="altura" placeholder="Cm" type="number"></div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Objetivo</label>
+        <select id="objetivo" style="width:100%;padding:11px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);font-family:Inter,sans-serif;font-size:13.5px;background:var(--surface);color:var(--text)">
+          <option>Bajar peso</option><option>Mantener</option><option>Subir peso</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="crearPaciente()" style="margin-top:6px">${icon('person')} Registrar paciente</button>
+    </div>`
+
+  } else if (activeTab === 'analytics') {
+    if (!hasPremiun) {
+      tabContent = `<div class="card"><div style="text-align:center;padding:40px 20px"><div style="font-size:36px;margin-bottom:12px">📊</div><div style="font-weight:700;font-size:16px;margin-bottom:8px">Analytics Premium</div><div style="color:var(--text2);font-size:13.5px;margin-bottom:20px">Accede a dashboards avanzados, gráficas de cumplimiento y análisis de rachas en tiempo real.</div><button class="btn btn-primary" onclick="verPrecios()">${icon('star')} Actualizar a Premium</button></div></div>`
+    } else {
+      tabContent = `
+      <div class="card" id="card-dashboard-nutri">
+        <div class="card-header"><div class="card-title">Analytics de pacientes</div><span class="live-badge"><span class="dot"></span>En vivo</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          ${statCard(total, 'Pacientes', 'var(--green-dark)')}
+          ${statCard(avg+'%', 'Promedio', 'var(--blue)')}
+          ${statCard(racha, 'Mejor racha', 'var(--gold)')}
+          ${statCard(activos, 'Activos hoy', 'var(--green)')}
+        </div>
+        <canvas id="grafica-nutri" height="170"></canvas>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+          <div><div style="font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">Mejores rachas</div><div id="mejores-rachas"></div></div>
+          <div><div style="font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">Necesitan atención</div><div id="peores-rachas"></div></div>
+        </div>
+      </div>`
+    }
   }
 
   app.innerHTML = `
-  ${dashboardPremium}
-  <div class="card">
-    <div class="card-header">
+  <div style="margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
       <div>
-        <div class="card-title">Panel Nutricionista</div>
-        <div class="card-subtitle">Gestiona tus pacientes y sus planes de alimentación</div>
+        <div style="font-size:22px;font-weight:800;letter-spacing:-.5px">Panel Nutricionista</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:2px">Bienvenido, <b>${nutriActual.user}</b> · Plan <b>${nutriActual.plan||'básico'}</b></div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${statCard(total,'Pacientes','var(--green)')}
+        ${statCard(avg+'%','Promedio','var(--blue)')}
+        ${statCard(activos,'Activos','var(--gold)')}
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="input-group">
-        <label class="input-label">Nombre</label>
-        <input id="nombre" placeholder="Nombre completo">
-      </div>
-      <div class="input-group">
-        <label class="input-label">Usuario</label>
-        <input id="usuario" placeholder="usuario123">
-      </div>
-      <div class="input-group">
-        <label class="input-label">Contraseña</label>
-        <input id="password" type="password" placeholder="••••••">
-      </div>
-      <div class="input-group">
-        <label class="input-label">Edad</label>
-        <input id="edad" placeholder="Años" type="number">
-      </div>
-      <div class="input-group">
-        <label class="input-label">Peso (kg)</label>
-        <input id="peso" placeholder="kg" type="number">
-      </div>
-      <div class="input-group">
-        <label class="input-label">Altura (cm)</label>
-        <input id="altura" placeholder="cm" type="number">
-      </div>
+    <div class="nt-tabs">
+      ${tabBtn('pacientes','Mis Pacientes','users')}
+      ${tabBtn('nuevo','Nuevo Paciente','person')}
+      ${tabBtn('analytics','Analytics','chart')}
     </div>
-    <div class="input-group">
-      <label class="input-label">Objetivo</label>
-      <select id="objetivo">
-        <option>Bajar peso</option>
-        <option>Mantener</option>
-        <option>Subir peso</option>
-      </select>
-    </div>
-    <button class="btn btn-primary" onclick="crearPaciente()">${icon('person')} Crear paciente</button>
   </div>
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Mis pacientes</div>
-      <span class="badge badge-muted">${misPacientes.length} total</span>
-    </div>
-    ${lista || '<p style="color:var(--text3);font-size:13px;text-align:center;padding:20px 0">Aún no tienes pacientes registrados</p>'}
-  </div>`
+  ${tabContent}`
 
-  if (nutriActual.plan == 'premium') setTimeout(() => renderDashboardNutri(misPacientes), 50)
-}
-
-function renderDashboardNutri(misPacientes) {
-  let dias = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo']
-  let labels = dias.map(d => d.charAt(0).toUpperCase() + d.slice(1, 3))
-  function getFechaParaDia(nombreDia) {
-    const mapa = {lunes:1,martes:2,miercoles:3,jueves:4,viernes:5,sabado:6,domingo:0}
-    let hoy = new Date(), diff = mapa[nombreDia] - hoy.getDay()
-    let fecha = new Date(hoy); fecha.setDate(hoy.getDate() + diff)
-    return fecha.toDateString()
+  if (activeTab === 'analytics' && hasPremiun) {
+    setTimeout(() => renderDashboardNutri(misPacientes), 50)
   }
-  let data = dias.map(dia => {
-    let fechaDia = getFechaParaDia(dia), cumplieron = 0, conDieta = 0
-    misPacientes.forEach(p => {
-      let dieta = p.dietasemanal?.[dia]
-      if (!dieta || !Object.values(dieta).some(v => v)) return
-      conDieta++
-      let entrada = (p.historialComidas || []).find(h => h.fecha === fechaDia)
-      if (entrada && entrada.comidas && entrada.comidas.length >= 5) cumplieron++
-    })
-    return conDieta > 0 ? Math.round((cumplieron / conDieta) * 100) : 0
-  })
-  let ctx = document.getElementById('grafica-nutri')
-  if (!ctx) return
-  if (window._chartNutri) window._chartNutri.destroy()
-  window._chartNutri = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ label:'% cumplimiento', data, backgroundColor: data.map(v=>v>=70?'rgba(22,163,74,.75)':v>=40?'rgba(217,119,6,.75)':'rgba(220,38,38,.75)'), borderRadius:8, borderSkipped:false }] },
-    options: { responsive:true, plugins:{legend:{labels:{font:{family:'Inter'},color:'#64748b'}}}, scales:{ y:{beginAtZero:true,max:100,ticks:{color:'#94a3b8',font:{family:'Inter'},callback:v=>v+'%'},grid:{color:'#f1f5f9'}}, x:{ticks:{color:'#94a3b8',font:{family:'Inter'}},grid:{display:false}} } }
-  })
-  let sorted = [...misPacientes].sort((a,b)=>(b.racha||0)-(a.racha||0))
-  let medals = ['🥇','🥈','🥉']
-  let mejoresDiv = document.getElementById('mejores-rachas')
-  let peoresDiv  = document.getElementById('peores-rachas')
-  if (!mejoresDiv||!peoresDiv) return
-  mejoresDiv.innerHTML = sorted.slice(0,3).map((p,i)=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:var(--surface2);margin-bottom:5px;font-size:13px">
-      <span>${medals[i]} <b>${p.nombre}</b></span>
-      <span class="badge badge-green">${p.racha||0} días</span>
-    </div>`).join('') || "<p style='color:var(--text3);font-size:12px'>Sin datos aún</p>"
-  let peores = sorted.slice(-3).reverse().filter(p=>(p.racha||0)<3)
-  peoresDiv.innerHTML = peores.length ? peores.map(p=>`
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:var(--red-light);margin-bottom:5px;font-size:13px;border-left:3px solid var(--red)">
-      <span><b>${p.nombre}</b></span>
-      <span class="badge badge-red">${p.racha||0} días</span>
-    </div>`).join('') : "<p style='color:var(--text3);font-size:12px'>Todos van bien</p>"
 }
 
-/* ═══════════════════════════════════════
-   CREAR PACIENTE
-═══════════════════════════════════════ */
+function switchNutriTab(tab) {
+  window._nutriTab = tab
+  dashboard()
+}
+
+
 async function crearPaciente() {
   let nombreVal  = document.getElementById('nombre').value
   let usuarioVal = document.getElementById('usuario').value.trim()
@@ -1757,6 +1747,7 @@ function avatar() {
 function panelPaciente() {
   limpiarListeners()
   reiniciarDia()
+  if (!window._pacienteTab) window._pacienteTab = 'inicio'
   buildSidebarPaciente('home')
   _renderPanelPaciente(pacienteActual)
   _unsubscribePaciente = window._db.escucharPaciente(pacienteActual.usuario, (datos) => {
@@ -1790,10 +1781,18 @@ function reiniciarDia() {
 
 function _renderPanelPaciente(p) {
   let hoy = diaActual(), dietaHoy = p.dietasemanal?.[hoy] || {}
-  app.innerHTML = `
-  <div class="card">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
-      <div style="width:48px;height:48px;border-radius:12px;background:var(--green-light);display:flex;align-items:center;justify-content:center">${avatar()}</div>
+  const activeTab = window._pacienteTab || 'inicio'
+
+  const tabBtn = (id, label, icon_name) => `
+    <button class="nt-tab ${activeTab===id?'active':''}" onclick="switchPacienteTab('${id}')">
+      ${icon(icon_name)} ${label}
+    </button>`
+
+  // ── Header unificado siempre visible ──
+  const header = `
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:48px;height:48px;border-radius:12px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${avatar()}</div>
       <div style="flex:1">
         <div style="font-size:17px;font-weight:700">${p.nombre}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap">
@@ -1802,100 +1801,145 @@ function _renderPanelPaciente(p) {
         </div>
       </div>
       <div style="text-align:right">
-        <div style="font-size:24px;font-weight:800;color:var(--green)">${p.progreso}%</div>
-        <div style="font-size:11px;color:var(--text3)">hoy</div>
+        <div style="font-size:26px;font-weight:800;color:var(--green);letter-spacing:-1px">${p.progreso}%</div>
+        <div style="font-size:11px;color:var(--text3)">completado hoy</div>
       </div>
     </div>
-    <div class="progress"><div class="bar" style="width:${p.progreso}%">${p.progreso>15?p.progreso+'%':''}</div></div>
-    <div style="margin-top:14px">
-      <div style="font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:8px">RACHA ACTUAL — ${p.racha} días</div>
+    <div class="progress" style="margin-top:14px"><div class="bar" style="width:${p.progreso}%">${p.progreso>15?p.progreso+'%':''}</div></div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span style="font-size:11.5px;font-weight:600;color:var(--text2)">Racha: ${p.racha} días</span>
       ${barraRacha()}
     </div>
-    <div style="margin-top:12px;font-size:12.5px;color:var(--text2)">Meta calórica: <b>${p.calorias} kcal/día</b></div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Registro de comidas</div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
-      ${[['desayuno','Desayuno'],['refa1','Refacción 1'],['almuerzo','Almuerzo'],['refa2','Refacción 2'],['cena','Cena']].map(([k,label])=>`
-      <button onclick="marcarComida('${k}')" style="padding:14px 10px;border-radius:var(--radius);border:1.5px solid ${p.comidas[k]?'var(--green)':'var(--border)'};background:${p.comidas[k]?'var(--green-light)':'var(--surface)'};color:${p.comidas[k]?'var(--green-dark)':'var(--text2)'};cursor:pointer;font-family:Inter,sans-serif;font-size:12.5px;font-weight:600;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div style="width:32px;height:32px;border-radius:50%;background:${p.comidas[k]?'var(--green)':'var(--surface2)'};display:flex;align-items:center;justify-content:center">
-          ${p.comidas[k]?`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`:icon('food').replace('currentColor','#94a3b8')}
-        </div>
-        ${label}
-      </button>`).join('')}
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">Dieta de hoy</div>
-      <span class="live-badge"><span class="dot"></span>Tiempo real</span>
-    </div>
-    <div id="dieta-hoy" style="display:flex;flex-direction:column;gap:10px">
-      ${[['desayuno','Desayuno'],['refa1','Refacción 1'],['almuerzo','Almuerzo'],['refa2','Refacción 2'],['cena','Cena']].map(([k,label])=>`
-      <div style="padding:11px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface)">
-        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:2px">${label}</div>
-        <div style="font-size:13.5px;color:var(--text)">${dietaHoy[k]||'<i style="color:var(--text3)">No asignado</i>'}</div>
-      </div>`).join('')}
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><div class="card-title">Funciones AI</div></div>
-    ${['estandar','premium'].includes(p.plan) ? `
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary btn-full" onclick="analisisProgreso()" style="background:#7C4DFF">${icon('ai')} Analizar mi progreso</button>
-      <button class="btn btn-secondary btn-full" onclick="chatNutriAI()">${icon('ai')} Chat con Nutricionista AI</button>
-    </div>
-    ` : `<div class="ai-locked">Funciones AI disponibles en planes <b>Estándar</b> y <b>Premium</b>.<br><span style="cursor:pointer;color:var(--green);font-weight:600" onclick="verPrecios()">Ver planes →</span></div>`}
-  </div>
-
-  <div class="card">
-    <div class="card-header"><div class="card-title">Dashboard de comidas</div></div>
-    ${p.plan=='premium' ? `
-    <canvas id="grafica-calorias" height="160"></canvas>
-    <div style="margin-top:14px" id="historial-comidas"></div>
-    ` : `<div class="ai-locked">Dashboard disponible solo en el plan <b>Premium</b>.<br><span style="cursor:pointer;color:var(--green);font-weight:600" onclick="verPrecios()">Ver planes →</span></div>`}
-  </div>
-
-  <div class="card">
-    <div class="card-header"><div class="card-title">Pedir comida</div></div>
-    <div style="margin-bottom:12px">
-      <div class="input-label">Tipo de comida</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px" id="selector-tipo-comida">
-        <span onclick="selTipo('desayuno',this)" class="chip-comida chip-activo">Desayuno</span>
-        <span onclick="selTipo('refa1',this)"    class="chip-comida">Refacción 1</span>
-        <span onclick="selTipo('almuerzo',this)" class="chip-comida">Almuerzo</span>
-        <span onclick="selTipo('refa2',this)"    class="chip-comida">Refacción 2</span>
-        <span onclick="selTipo('cena',this)"     class="chip-comida">Cena</span>
-      </div>
-      <input type="hidden" id="tipoComida" value="desayuno">
-    </div>
-    <div id="sugerencia-dieta" style="background:var(--green-light);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:var(--green-dark);margin-bottom:12px"></div>
-    <div class="input-group">
-      <label class="input-label">Dirección de entrega</label>
-      <input id="direccion" placeholder="Ej: 5a Avenida, Zona 1">
-    </div>
-    <div style="margin-bottom:12px">
-      <div class="input-label">Método de pago</div>
-      <div style="display:flex;gap:8px">
-        <span onclick="selPago('efectivo',this)" class="chip-pago chip-pago-activo">Efectivo</span>
-        <span onclick="selPago('tarjeta',this)"  class="chip-pago">Tarjeta</span>
-      </div>
-      <input type="hidden" id="metodoPago" value="efectivo">
-    </div>
-    <div id="campo-billete" class="input-group">
-      <label class="input-label">¿Con cuánto pagarás? (Q)</label>
-      <input id="billete" type="number" placeholder="Ej: 100">
-    </div>
-    <button class="btn btn-primary btn-full btn-lg" onclick="pedido()">Confirmar pedido</button>
   </div>`
-  setTimeout(renderDashboard, 50)
-  setTimeout(() => { let el = document.querySelector('.chip-comida.chip-activo'); if(el) selTipo('desayuno', el) }, 60)
+
+  // ── Tabs ──
+  const tabs = `
+  <div class="nt-tabs" style="margin-bottom:16px">
+    ${tabBtn('inicio','Hoy','home')}
+    ${tabBtn('dieta','Mi Dieta','clipboard')}
+    ${tabBtn('ai','Asistente IA','ai')}
+    ${tabBtn('pedido','Pedir','food')}
+    ${['premium'].includes(p.plan)?tabBtn('progreso','Progreso','chart'):''}
+  </div>`
+
+  let tabContent = ''
+
+  if (activeTab === 'inicio') {
+    tabContent = `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Registro de comidas</div><div class="card-subtitle">Marca cada comida al completarla</div></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${[['desayuno','Desayuno','🌅'],['refa1','Refacción 1','🍎'],['almuerzo','Almuerzo','🍽️'],['refa2','Refacción 2','🥤'],['cena','Cena','🌙']].map(([k,label,em])=>`
+        <button onclick="marcarComida('${k}')" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius);border:1.5px solid ${p.comidas[k]?'var(--green)':'var(--border)'};background:${p.comidas[k]?'var(--green-light)':'var(--surface)'};cursor:pointer;font-family:Inter,sans-serif;text-align:left;width:100%;transition:all .15s">
+          <div style="width:38px;height:38px;border-radius:10px;background:${p.comidas[k]?'var(--green)':'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
+            ${p.comidas[k]?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`:em}
+          </div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;color:${p.comidas[k]?'var(--green-dark)':'var(--text)'}">${label}</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px">${dietaHoy[k]||'Sin asignar'}</div>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:${p.comidas[k]?'var(--green-dark)':'var(--text3)'}">
+            ${p.comidas[k]?'✓ Listo':'Marcar'}
+          </div>
+        </button>`).join('')}
+      </div>
+    </div>`
+
+  } else if (activeTab === 'dieta') {
+    tabContent = `
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Dieta de hoy</div><div class="card-subtitle">${hoy.charAt(0).toUpperCase()+hoy.slice(1)} · ${p.calorias} kcal/día</div></div>
+        <span class="live-badge" id="sync-timestamp"><span class="dot"></span>Tiempo real</span>
+      </div>
+      <div id="dieta-hoy" style="display:flex;flex-direction:column;gap:10px">
+        ${[['desayuno','Desayuno'],['refa1','Refacción 1'],['almuerzo','Almuerzo'],['refa2','Refacción 2'],['cena','Cena']].map(([k,label])=>`
+        <div style="padding:13px 16px;border-radius:var(--radius-sm);border:1.5px solid ${p.comidas[k]?'var(--green-muted)':'var(--border)'};background:${p.comidas[k]?'var(--green-light)':'var(--surface)'}">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:.5px">${label}</span>
+            ${p.comidas[k]?`<span style="font-size:11px;font-weight:700;color:var(--green-dark);background:var(--green-muted);padding:2px 8px;border-radius:99px">✓ Completado</span>`:''}
+          </div>
+          <div style="font-size:13.5px;color:var(--text);margin-top:4px">${dietaHoy[k]||'<i style="color:var(--text3)">No asignado</i>'}</div>
+        </div>`).join('')}
+      </div>
+    </div>`
+
+  } else if (activeTab === 'ai') {
+    if (['estandar','premium'].includes(p.plan)) {
+      tabContent = `
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">Asistente de IA</div><div class="card-subtitle">Análisis personalizado con inteligencia artificial</div></div></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn btn-full btn-lg" onclick="analisisProgreso()" style="background:#7C4DFF;color:white;justify-content:flex-start;gap:14px;padding:16px">
+            <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('ai')}</div>
+            <div style="text-align:left"><div style="font-size:14px;font-weight:700">Analizar mi progreso</div><div style="font-size:12px;opacity:.8;margin-top:2px">Retroalimentación personalizada con IA</div></div>
+          </button>
+          <button class="btn btn-secondary btn-full btn-lg" onclick="chatNutriAI()" style="justify-content:flex-start;gap:14px;padding:16px">
+            <div style="width:38px;height:38px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('ai')}</div>
+            <div style="text-align:left"><div style="font-size:14px;font-weight:700">Chat con Nutricionista IA</div><div style="font-size:12px;color:var(--text3);margin-top:2px">Consultas en tiempo real</div></div>
+          </button>
+        </div>
+      </div>`
+    } else {
+      tabContent = `<div class="card"><div class="ai-locked" style="text-align:center;padding:40px 20px"><div style="font-size:36px;margin-bottom:12px">🤖</div><div style="font-weight:700;font-size:16px;margin-bottom:8px">Asistente de IA</div><div style="color:var(--text2);font-size:13.5px;margin-bottom:20px">Disponible en planes <b>Estándar</b> y <b>Premium</b>.</div><button class="btn btn-primary" onclick="verPrecios()">${icon('star')} Ver planes</button></div></div>`
+    }
+
+  } else if (activeTab === 'pedido') {
+    tabContent = `
+    <div class="card">
+      <div class="card-header"><div><div class="card-title">Pedir comida</div><div class="card-subtitle">Solicita tu comida según tu dieta</div></div></div>
+      <div class="input-group">
+        <label class="input-label">Tipo de comida</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px" id="selector-tipo-comida">
+          <span onclick="selTipo('desayuno',this)" class="chip-comida chip-activo">Desayuno</span>
+          <span onclick="selTipo('refa1',this)"    class="chip-comida">Refacción 1</span>
+          <span onclick="selTipo('almuerzo',this)" class="chip-comida">Almuerzo</span>
+          <span onclick="selTipo('refa2',this)"    class="chip-comida">Refacción 2</span>
+          <span onclick="selTipo('cena',this)"     class="chip-comida">Cena</span>
+        </div>
+        <input type="hidden" id="tipoComida" value="desayuno">
+      </div>
+      <div id="sugerencia-dieta" style="background:var(--green-light);border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;color:var(--green-dark);margin-bottom:12px"></div>
+      <div class="input-group">
+        <label class="input-label">Dirección de entrega</label>
+        <input id="direccion" placeholder="Ej: 5a Avenida, Zona 1">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Método de pago</label>
+        <div style="display:flex;gap:8px">
+          <span onclick="selPago('efectivo',this)" class="chip-pago chip-pago-activo">💵 Efectivo</span>
+          <span onclick="selPago('tarjeta',this)"  class="chip-pago">💳 Tarjeta</span>
+        </div>
+        <input type="hidden" id="metodoPago" value="efectivo">
+      </div>
+      <div id="campo-billete" class="input-group">
+        <label class="input-label">¿Con cuánto pagarás? (Q)</label>
+        <input id="billete" type="number" placeholder="Ej: 100">
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="pedido()">Confirmar pedido</button>
+    </div>`
+
+  } else if (activeTab === 'progreso') {
+    tabContent = `
+    <div class="card">
+      <div class="card-header"><div class="card-title">Dashboard de progreso</div><div class="card-subtitle">Últimos 7 días de seguimiento</div></div>
+      ${p.plan=='premium' ? `<canvas id="grafica-calorias" height="160"></canvas><div style="margin-top:14px" id="historial-comidas"></div>` : `<div class="ai-locked" style="text-align:center;padding:30px"><div style="font-weight:700;margin-bottom:8px">Disponible en Premium</div><button class="btn btn-primary" onclick="verPrecios()">Ver planes</button></div>`}
+    </div>`
+  }
+
+  app.innerHTML = header + tabs + tabContent
+
+  if (activeTab === 'inicio' || activeTab === 'pedido') {
+    setTimeout(() => { let el = document.querySelector('.chip-comida.chip-activo'); if(el) selTipo('desayuno', el) }, 60)
+  }
+  if (activeTab === 'progreso') setTimeout(renderDashboard, 50)
 }
+
+function switchPacienteTab(tab) {
+  window._pacienteTab = tab
+  _renderPanelPaciente(pacienteActual)
+}
+
 
 /* ═══════════════════════════════════════
    MARCAR COMIDA
