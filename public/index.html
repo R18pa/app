@@ -1442,7 +1442,21 @@ function renderPlanes(modo, origen) {
 
 function elegirPlan(key, modo, origen) {
   planSeleccionado = key
-  // En onboarding: solo marcar visualmente, NO ir a pantalla de pago
+  // Registro de nutricionista: guardar datos temporales e ir a pasarela de pago
+  if (origen === 'registro') {
+    if (_onbData && _onbData.user) {
+      window._tempNutri = {
+        user:          _onbData.user,
+        pass:          _onbData.pass,
+        nombre:        _onbData.nombre,
+        especialidad:  _onbData.especialidad || '',
+        fechaRegistro: new Date().toDateString()
+      }
+    }
+    pantallaPago('nutricionista', 'registro')
+    return
+  }
+  // En onboarding/preview sin registro: solo marcar visualmente
   if (modo === 'onboarding' || modo === 'preview') {
     const s = document.getElementById('seccion-planes')
     if (s) s.innerHTML = renderPlanes(modo, origen)
@@ -2622,9 +2636,10 @@ function pantallaPlanYPago(tipo, origen) {
 }
 
 function pantallaPago(tipo, origen) {
+  const volverFn = (origen === 'registro') ? `renderOnboarding(3)` : `pantallaPlanYPago('${tipo}','${origen}')`
   app.innerHTML = `
   <div class="card" style="max-width:420px;margin:0 auto">
-    <button class="btn btn-ghost" onclick="pantallaPlanYPago('${tipo}','${origen}')" style="margin-bottom:14px">${icon('back')} Volver</button>
+    <button class="btn btn-ghost" onclick="${volverFn}" style="margin-bottom:14px">${icon('back')} Volver</button>
     <div class="card-header">
       <div>
         <div class="card-title">Información de pago</div>
