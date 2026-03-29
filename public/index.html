@@ -2735,7 +2735,7 @@ async function generarRetoAI() {
   if (btn) { btn.disabled=true; btn.textContent='Generando...' }
   let promptText='Eres un nutricionista experto. Genera UN reto nutricional creativo y motivador. Responde SOLO con JSON (sin markdown): {"titulo":"...","descripcion":"...","duracion":"X días","dificultad":"Fácil|Medio|Difícil"}\nPaciente: '+pacienteActual.nombre+', Objetivo: '+pacienteActual.objetivo+', Racha: '+pacienteActual.racha+' días.'
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,messages:[{role:'user',content:promptText}]})})
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:promptText}]})})
     const data=await res.json()
     let texto=data.content.map(b=>b.text||'').join('').replace(/```json|```/g,'').trim()
     let retoAI=JSON.parse(texto); retoAI.esAI=true; retoAI.completado=false; retoAI.fechaCreado=new Date().toDateString()
@@ -2986,7 +2986,7 @@ async function analisisProgreso() {
   let dietaHoy=pacienteActual.dietasemanal?.[hoy]||{}
   let promptText=`Eres un nutricionista experto. Analiza el progreso de este paciente y da retroalimentación motivadora en español.\nDatos:\n- Nombre: ${pacienteActual.nombre}\n- Objetivo: ${pacienteActual.objetivo}\n- Calorías diarias: ${pacienteActual.calorias} kcal\n- Progreso hoy: ${pacienteActual.progreso}% (${marcadas}/5 comidas)\n- Racha: ${pacienteActual.racha} días\n- Dieta hoy (${hoy}): Desayuno: ${dietaHoy.desayuno||'no asignado'}, Almuerzo: ${dietaHoy.almuerzo||'no asignado'}, Cena: ${dietaHoy.cena||'no asignado'}\nDa un análisis breve (3-4 párrafos) con evaluación del día, motivación y 2 consejos prácticos.`
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:promptText}]})})
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:promptText}]})})
     const data=await res.json()
     const texto=(data.content||[]).map(b=>b.text||'').join('').replace(/\n/g,'<br>')
     document.getElementById('analisis-resultado').innerHTML=texto||'<i>Sin respuesta. Verifica la conexión.</i>'
@@ -3026,7 +3026,7 @@ async function enviarChat() {
   box.scrollTop=box.scrollHeight; chatHistory.push({role:'user',content:texto})
   let systemPrompt=`Eres un nutricionista amable y experto. Responde en español de forma concisa (máximo 3 oraciones).\nContexto: Nombre: ${pacienteActual.nombre}, Objetivo: ${pacienteActual.objetivo}, Calorías: ${pacienteActual.calorias} kcal/día, Plan: ${pacienteActual.plan}.`
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:systemPrompt,messages:chatHistory})})
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:systemPrompt,messages:chatHistory})})
     const data=await res.json(), respuesta=(data.content||[]).map(b=>b.text||'').join('')
     chatHistory.push({role:'assistant',content:respuesta}); msgLoading.remove()
     let msgAI=document.createElement('div'); msgAI.className='msg ai'; msgAI.textContent=respuesta; box.appendChild(msgAI); box.scrollTop=box.scrollHeight
@@ -3110,7 +3110,7 @@ Si no puedes identificar claramente un alimento, usa confianza:"baja" y estima l
 Responde SOLO el JSON, ningún texto adicional.`
 
     const body = {
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 600,
       messages: [{
         role: 'user',
@@ -3121,9 +3121,11 @@ Responde SOLO el JSON, ningún texto adicional.`
       }]
     }
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/claude', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(body)
     })
 
