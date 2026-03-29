@@ -1442,11 +1442,13 @@ function renderPlanes(modo, origen) {
 
 function elegirPlan(key, modo, origen) {
   planSeleccionado = key
-  if (modo == 'preview') {
+  // En onboarding: solo marcar visualmente, NO ir a pantalla de pago
+  if (modo === 'onboarding' || modo === 'preview') {
     const s = document.getElementById('seccion-planes')
     if (s) s.innerHTML = renderPlanes(modo, origen)
     return
   }
+  // En otros contextos (paciente desde nutri), sí ir al pago
   pantallaPago(modo, origen)
 }
 
@@ -1654,25 +1656,49 @@ async function onbNext(paso) {
 
 async function onbFinalizar() {
   if (!planSeleccionado) { toast('warning','Elige un plan','Selecciona un plan para continuar'); return }
+  if (!_onbData.user || !_onbData.pass || !_onbData.nombre) {
+    toast('error','Datos incompletos','Vuelve al paso 1 y completa usuario y nombre'); return
+  }
+
   mostrarLoader('Creando tu cuenta...')
+
   try {
+    // Esperar Firebase si no está listo
+    if (!window._dbReady) {
+      mostrarLoader('Conectando con Firebase...')
+      await esperarDB()
+    }
+    if (!window._db) {
+      ocultarLoader()
+      toast('error','Sin conexión','No se pudo conectar con la base de datos. Recarga la página.')
+      return
+    }
+
     const nutri = {
-      user: _onbData.user,
-      pass: _onbData.pass,
-      nombre: _onbData.nombre,
-      especialidad: _onbData.especialidad || '',
-      plan: planSeleccionado,
+      user:          _onbData.user,
+      pass:          _onbData.pass,
+      nombre:        _onbData.nombre,
+      especialidad:  _onbData.especialidad || '',
+      plan:          planSeleccionado,
       fechaRegistro: new Date().toDateString()
     }
+
+    mostrarLoader('Guardando en Firebase...')
     await window._db.guardarNutri(nutri)
+
+    // Sesión activa ANTES de dashboard
+    nutriActual      = nutri
+    _onbData         = {}
+    planSeleccionado = null
+
     ocultarLoader()
-    toast('success', '¡Cuenta creada!', `Bienvenido, ${nutri.nombre || nutri.user} 🎉`, 4500)
-    nutriActual = nutri   // ← FIX: asignar sesión antes de entrar al dashboard
-    _onbData = {}         // limpiar datos temporales
-    setTimeout(() => dashboard(), 1200)
+    toast('success', '¡Cuenta creada!', `Bienvenido, ${nutri.nombre} 🎉`, 4000)
+    setTimeout(() => dashboard(), 800)
+
   } catch(err) {
     ocultarLoader()
-    toast('error','Error al guardar','Revisa tu conexión e inténtalo de nuevo')
+    console.error('[onbFinalizar] Error:', err)
+    toast('error', 'Error al crear cuenta', err?.message || 'Revisa tu conexión e inténtalo de nuevo')
   }
 }
 
