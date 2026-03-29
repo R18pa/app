@@ -976,6 +976,98 @@ body.dark .onboarding-step-dot { background: var(--surface2); }
 .nt-tab:hover { color: var(--text); background: rgba(255,255,255,.7); transform: scale(1.02); }
 .nt-tab:active { transform: scale(0.98); }
 .nt-tab.active { background: var(--surface); color: var(--matcha-dark); box-shadow: var(--shadow-sm); }
+/* ═══════════════════════════════════════
+   ESCÁNER DE ALIMENTOS — Vision AI
+═══════════════════════════════════════ */
+.scanner-drop-zone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--trans);
+  background: var(--surface2);
+  position: relative;
+  overflow: hidden;
+}
+.scanner-drop-zone:hover,
+.scanner-drop-zone.drag-over {
+  border-color: var(--matcha);
+  background: var(--green-light);
+}
+.scanner-drop-zone input[type=file] {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer; width: 100%; height: 100%; margin: 0;
+  border: none; padding: 0;
+}
+.scanner-drop-zone input[type=file]:focus { box-shadow: none; transform: none; }
+
+.scanner-preview-img {
+  width: 100%; max-height: 240px; object-fit: cover;
+  border-radius: var(--radius); margin-bottom: 14px;
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.scanner-result-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  animation: cardIn .3s ease both;
+}
+.scanner-result-header {
+  background: linear-gradient(135deg, var(--matcha-dark) 0%, var(--carob) 100%);
+  padding: 16px 20px;
+  color: #fff;
+}
+.scanner-result-header h3 { font-family: 'Sora',sans-serif; font-size: 18px; font-weight: 700; margin: 0 0 2px; }
+.scanner-result-header p  { font-size: 12px; opacity: .8; margin: 0; }
+
+.macro-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; padding: 16px;
+}
+.macro-item {
+  text-align: center;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+}
+.macro-val  { font-family: 'Sora',sans-serif; font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -.5px; }
+.macro-unit { font-size: 10px; color: var(--text3); font-weight: 600; }
+.macro-lbl  { font-size: 11px; color: var(--text2); margin-top: 3px; font-weight: 500; }
+
+.kcal-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--green-light); color: var(--matcha-dark);
+  border: 1px solid var(--pistache-lt);
+  border-radius: 99px; padding: 5px 14px;
+  font-size: 13px; font-weight: 700;
+}
+
+.scan-history-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 8px;
+  transition: var(--trans);
+  animation: cardIn .25s ease both;
+}
+.scan-history-item:hover { border-color: var(--pistache-lt); transform: translateX(2px); }
+.scan-history-thumb {
+  width: 44px; height: 44px; border-radius: 8px;
+  object-fit: cover; flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.scan-history-thumb-placeholder {
+  width: 44px; height: 44px; border-radius: 8px;
+  background: var(--green-light); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
 </style>
 </head>
 <body>
@@ -1098,6 +1190,10 @@ const ICONS = {
   food:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`,
   back:      `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,18 9,12 15,6"/></svg>`,
   check:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>`,
+  camera:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`,
+  scan:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>`,
+  plus:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  trash:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
 }
 function icon(name) { return ICONS[name] || '' }
 
@@ -1194,6 +1290,7 @@ function buildSidebarPaciente(activeSection) {
       <div class="sb-section-label">Mi día</div>
       ${sbItem('home', 'panelPaciente()', 'home', 'Inicio')}
       ${sbItem('comidas', 'panelPaciente()', 'food', 'Mis comidas')}
+      ${sbItem('scanner', 'switchPacienteTab("scanner");closeSidebar()', 'camera', 'Escáner AI', {isNew:true})}
     </div>
     <div class="sb-section">
       <div class="sb-section-label">Progreso</div>
@@ -2014,6 +2111,7 @@ function _renderPanelPaciente(p) {
   <div class="nt-tabs" style="margin-bottom:16px">
     ${tabBtn('inicio','Hoy','home')}
     ${tabBtn('dieta','Mi Dieta','clipboard')}
+    ${tabBtn('scanner','Escáner','camera')}
     ${tabBtn('ai','Asistente IA','ai')}
     ${tabBtn('pedido','Pedir','food')}
     ${['premium'].includes(p.plan)?tabBtn('progreso','Progreso','chart'):''}
@@ -2079,6 +2177,70 @@ function _renderPanelPaciente(p) {
       </div>`
     } else {
       tabContent = `<div class="card"><div class="ai-locked" style="text-align:center;padding:40px 20px"><div style="font-size:36px;margin-bottom:12px">🤖</div><div style="font-weight:700;font-size:16px;margin-bottom:8px">Asistente de IA</div><div style="color:var(--text2);font-size:13.5px;margin-bottom:20px">Disponible en planes <b>Estándar</b> y <b>Premium</b>.</div><button class="btn btn-primary" onclick="verPrecios()">${icon('star')} Ver planes</button></div></div>`
+    }
+
+  } else if (activeTab === 'scanner') {
+    if (['estandar','premium'].includes(p.plan)) {
+      const histScan = (p.escaneos || []).slice(-5).reverse()
+      const histHtml = histScan.length ? histScan.map((s,i) => `
+        <div class="scan-history-item" style="animation-delay:${i*0.05}s">
+          ${s.thumb
+            ? `<img class="scan-history-thumb" src="${s.thumb}" alt="${s.nombre}">`
+            : `<div class="scan-history-thumb-placeholder">🍽️</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:700;color:var(--text)">${s.nombre}</div>
+            <div style="font-size:11.5px;color:var(--text3);margin-top:2px">${s.calorias} kcal · P:${s.proteinas}g · C:${s.carbohidratos}g · G:${s.grasas}g</div>
+            <div style="font-size:10.5px;color:var(--text3);margin-top:1px">${s.fecha||''}</div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--matcha-dark);background:var(--green-light);padding:3px 10px;border-radius:99px;white-space:nowrap">${s.calorias} kcal</div>
+        </div>`).join('')
+        : `<p style="color:var(--text3);font-size:13px;text-align:center;padding:20px 0">Aún no has escaneado ningún alimento hoy.</p>`
+
+      tabContent = `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">${icon('camera')} Escáner de alimentos</div>
+            <div class="card-subtitle">Fotografía un alimento y la IA lo analiza al instante</div>
+          </div>
+        </div>
+
+        <div id="scanner-upload-zone">
+          <div class="scanner-drop-zone" id="drop-zone"
+            ondragover="event.preventDefault();this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')"
+            ondrop="event.preventDefault();this.classList.remove('drag-over');handleScanFile(event.dataTransfer.files[0])">
+            <input type="file" accept="image/*" capture="environment"
+              onchange="handleScanFile(this.files[0])" id="scan-file-input">
+            <div style="font-size:36px;margin-bottom:10px">📷</div>
+            <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px">Toca para tomar foto o subir imagen</div>
+            <div style="font-size:12.5px;color:var(--text3)">Soporta JPG, PNG, WEBP · Máx. 10 MB</div>
+          </div>
+          <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:10px">
+            Funciona con cualquier alimento, plato preparado o empaque
+          </p>
+        </div>
+
+        <div id="scanner-resultado" style="display:none;margin-top:4px"></div>
+
+        <div style="margin-top:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Escaneados hoy</div>
+          <div id="scan-history-list">${histHtml}</div>
+        </div>
+      </div>`
+    } else {
+      tabContent = `
+      <div class="card">
+        <div style="text-align:center;padding:40px 20px">
+          <div style="font-size:42px;margin-bottom:14px">📷</div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:8px;color:var(--text)">Escáner con Vision AI</div>
+          <div style="color:var(--text2);font-size:13.5px;margin-bottom:20px;line-height:1.6">
+            Fotografía cualquier alimento y obtén calorías,<br>proteínas, carbohidratos y grasas al instante.<br>
+            Disponible en planes <b>Estándar</b> y <b>Premium</b>.
+          </div>
+          <button class="btn btn-primary" onclick="verPrecios()">${icon('star')} Ver planes</button>
+        </div>
+      </div>`
     }
 
   } else if (activeTab === 'pedido') {
@@ -2843,6 +3005,235 @@ async function enviarChat() {
     chatHistory.push({role:'assistant',content:respuesta}); msgLoading.remove()
     let msgAI=document.createElement('div'); msgAI.className='msg ai'; msgAI.textContent=respuesta; box.appendChild(msgAI); box.scrollTop=box.scrollHeight
   } catch(e) { msgLoading.textContent='Error al conectar. Intenta de nuevo.' }
+}
+
+/* ═══════════════════════════════════════
+   ESCÁNER DE ALIMENTOS — Vision AI
+═══════════════════════════════════════ */
+
+// Convierte archivo a base64
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+// Comprime la imagen si es muy grande (max 1000px, calidad 0.82)
+function comprimirImagen(file, maxPx = 1000, calidad = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let w = img.width, h = img.height
+      if (w > maxPx || h > maxPx) {
+        if (w > h) { h = Math.round(h * maxPx / w); w = maxPx }
+        else        { w = Math.round(w * maxPx / h); h = maxPx }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w; canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', calidad)
+    }
+    img.src = url
+  })
+}
+
+async function handleScanFile(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    toast('warning','Archivo inválido','Solo se aceptan imágenes JPG, PNG o WEBP')
+    return
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    toast('warning','Imagen muy grande','El archivo no puede superar 10 MB')
+    return
+  }
+
+  // Mostrar preview inmediatamente
+  const previewUrl = URL.createObjectURL(file)
+  const resDiv = document.getElementById('scanner-resultado')
+  const uploadZone = document.getElementById('scanner-upload-zone')
+  if (uploadZone) uploadZone.style.display = 'none'
+  if (resDiv) {
+    resDiv.style.display = 'block'
+    resDiv.innerHTML = `
+      <img src="${previewUrl}" class="scanner-preview-img" alt="Analizando...">
+      <div style="display:flex;align-items:center;gap:12px;padding:16px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">
+        <div class="spinner" style="width:28px;height:28px;border-width:2.5px;flex-shrink:0"></div>
+        <div>
+          <div style="font-weight:700;font-size:13.5px;color:var(--text)">Analizando con Vision AI...</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Identificando alimento y calculando macros</div>
+        </div>
+      </div>`
+  }
+
+  try {
+    // Comprimir y convertir a base64
+    const comprimido = await comprimirImagen(file)
+    const base64 = await fileToBase64(comprimido)
+    const mimeType = 'image/jpeg'
+
+    const prompt = `Analiza esta imagen de alimento y responde ÚNICAMENTE con JSON válido, sin markdown, sin texto extra.
+Formato exacto:
+{"nombre":"Nombre del alimento o plato","descripcion":"Descripción breve en español","calorias":250,"proteinas":12,"carbohidratos":30,"grasas":8,"porcion":"1 porción estimada","confianza":"alta|media|baja","consejo":"Un consejo nutricional breve en español"}
+
+Si no puedes identificar claramente un alimento, usa confianza:"baja" y estima los valores.
+Responde SOLO el JSON, ningún texto adicional.`
+
+    const body = {
+      model: 'claude-sonnet-4-6',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64 } },
+          { type: 'text',  text: prompt }
+        ]
+      }]
+    }
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error?.message || `HTTP ${res.status}`)
+    }
+
+    const data = await res.json()
+    const texto = (data.content || []).map(b => b.text || '').join('').trim()
+    // Limpiar posibles backticks de markdown
+    const limpio = texto.replace(/```json|```/g,'').trim()
+    const resultado = JSON.parse(limpio)
+
+    mostrarResultadoScanner(resultado, previewUrl, file)
+
+  } catch (e) {
+    console.error('Scanner error:', e)
+    if (resDiv) {
+      resDiv.innerHTML = `
+        <div style="padding:20px;background:var(--red-light);border-radius:var(--radius);border:1px solid #fca5a5;text-align:center">
+          <div style="font-size:28px;margin-bottom:8px">⚠️</div>
+          <div style="font-weight:700;color:var(--red);margin-bottom:4px">No se pudo analizar</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:14px">${e.message || 'Error de conexión. Verifica tu internet.'}</div>
+          <button class="btn btn-secondary btn-sm" onclick="reiniciarScanner()">Intentar de nuevo</button>
+        </div>`
+    }
+    toast('error','Error al escanear','No se pudo conectar con Vision AI')
+  }
+}
+
+function mostrarResultadoScanner(r, previewUrl, file) {
+  const resDiv = document.getElementById('scanner-resultado')
+  if (!resDiv) return
+
+  const confianzaColor = { alta:'var(--matcha)', media:'var(--chai-dark)', baja:'var(--red)' }[r.confianza] || 'var(--text3)'
+  const confianzaLabel = { alta:'Alta confianza', media:'Confianza media', baja:'Baja confianza' }[r.confianza] || r.confianza
+
+  resDiv.innerHTML = `
+    <img src="${previewUrl}" class="scanner-preview-img" alt="${r.nombre}">
+    <div class="scanner-result-card">
+      <div class="scanner-result-header">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div>
+            <h3>${r.nombre}</h3>
+            <p>${r.descripcion}</p>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:26px;font-weight:800;font-family:'Sora',sans-serif">${r.calorias}</div>
+            <div style="font-size:10px;opacity:.8;font-weight:600">KCAL</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <span style="background:rgba(255,255,255,.15);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:600">${r.porcion}</span>
+          <span style="background:rgba(255,255,255,.15);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:600;color:${confianzaColor === 'var(--matcha)' ? '#dcfce7' : '#fef3c7'}">${confianzaLabel}</span>
+        </div>
+      </div>
+
+      <div class="macro-grid">
+        <div class="macro-item">
+          <div class="macro-val">${r.proteinas}<span class="macro-unit">g</span></div>
+          <div class="macro-lbl">Proteínas</div>
+        </div>
+        <div class="macro-item">
+          <div class="macro-val">${r.carbohidratos}<span class="macro-unit">g</span></div>
+          <div class="macro-lbl">Carbohidratos</div>
+        </div>
+        <div class="macro-item">
+          <div class="macro-val">${r.grasas}<span class="macro-unit">g</span></div>
+          <div class="macro-lbl">Grasas</div>
+        </div>
+      </div>
+
+      ${r.consejo ? `
+      <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-start">
+        <span style="font-size:18px;flex-shrink:0">💡</span>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">${r.consejo}</div>
+      </div>` : ''}
+
+      <div style="padding:14px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="flex:1" onclick="guardarEscaneo(${JSON.stringify(r).replace(/"/g,'&quot;')}, '${previewUrl}')">
+          ${icon('plus')} Añadir a mi registro
+        </button>
+        <button class="btn btn-secondary" onclick="reiniciarScanner()">
+          ${icon('camera')} Escanear otro
+        </button>
+      </div>
+    </div>`
+}
+
+async function guardarEscaneo(resultado, previewUrl) {
+  if (!pacienteActual) return
+  mostrarLoader('Guardando alimento...')
+  try {
+    if (!pacienteActual.escaneos) pacienteActual.escaneos = []
+
+    // Guardar thumbnail como URL (no base64 completo para no saturar Firebase)
+    const escaneo = {
+      ...resultado,
+      thumb: null,           // no guardamos imagen en Firebase (muy pesado)
+      fecha: new Date().toLocaleString('es-GT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }),
+      fechaRaw: new Date().toDateString()
+    }
+    pacienteActual.escaneos.push(escaneo)
+
+    // También sumar calorías al historial del día
+    const hoy = new Date().toDateString()
+    if (!pacienteActual.historialComidas) pacienteActual.historialComidas = []
+    let entradaHoy = pacienteActual.historialComidas.find(h => h.fecha === hoy)
+    if (!entradaHoy) {
+      entradaHoy = { fecha: hoy, comidas: [], calorias: 0 }
+      pacienteActual.historialComidas.push(entradaHoy)
+    }
+    entradaHoy.calorias += resultado.calorias || 0
+    entradaHoy.comidas.push(`scan:${resultado.nombre}`)
+
+    await window._db.guardarPaciente(pacienteActual)
+    ocultarLoader()
+    toast('success', `${resultado.nombre} registrado`, `+${resultado.calorias} kcal añadidas al historial del día`, 4000)
+    // Volver al tab y mostrar historial actualizado
+    window._pacienteTab = 'scanner'
+    _renderPanelPaciente(pacienteActual)
+  } catch(e) {
+    ocultarLoader()
+    toast('error', 'Error al guardar', 'No se pudo guardar el escaneo. Intenta de nuevo.')
+  }
+}
+
+function reiniciarScanner() {
+  const uploadZone = document.getElementById('scanner-upload-zone')
+  const resDiv     = document.getElementById('scanner-resultado')
+  if (uploadZone) uploadZone.style.display = 'block'
+  if (resDiv)     { resDiv.style.display = 'none'; resDiv.innerHTML = '' }
+  // Limpiar el input de archivo para poder volver a seleccionar el mismo
+  const inp = document.getElementById('scan-file-input')
+  if (inp) inp.value = ''
 }
 
 /* ═══════════════════════════════════════
