@@ -30,11 +30,7 @@
     async getPacientesDeNutri(nutriUser) { const snap = await get(ref(db, 'pacientes')); if (!snap.exists()) return []; return Object.values(snap.val()).filter(p => p.nutri === nutriUser); },
     async getTodosPacientes() { const snap = await get(ref(db, 'pacientes')); if (!snap.exists()) return []; return Object.values(snap.val()); },
     escucharPaciente(usuario, callback) { return onValue(ref(db, `pacientes/${usuario}`), snap => { if (snap.exists()) callback(snap.val()); }); },
-    escucharPacientesNutri(nutriUser, callback) { return onValue(ref(db, 'pacientes'), snap => { if (!snap.exists()) { callback([]); return; } callback(Object.values(snap.val()).filter(p => p.nutri === nutriUser)); }); },
-    async guardarPedido(pedidoObj) { const newRef = push(ref(db, 'pedidos')); await set(newRef, { ...pedidoObj, id: newRef.key }); return newRef.key; },
-    async actualizarEstadoPedido(pedidoId, estado) { await update(ref(db, `pedidos/${pedidoId}`), { estado, ultimaActualizacion: new Date().toISOString() }); },
-    escucharPedidos(callback) { return onValue(ref(db, 'pedidos'), snap => { if (!snap.exists()) { callback([]); return; } callback(Object.values(snap.val()).filter(p => p)); }); },
-    escucharPedidosPaciente(usuario, callback) { return onValue(ref(db, 'pedidos'), snap => { if (!snap.exists()) { callback([]); return; } callback(Object.values(snap.val()).filter(p => p && p.paciente === usuario)); }); },
+    escucharPacientesNutri(nutriUser, callback) { return onValue(ref(db, 'pacientes'), snap => { if (!snap.exists()) { callback([]); return; } callback(Object.values(snap.val()).filter(p => p.nutri === nutriUser)); }); }
   };
   window._dbReady = true;
   window.dispatchEvent(new Event('dbReady'));
@@ -1125,11 +1121,9 @@ body.dark .onboarding-step-dot { background: var(--surface2); }
 ═══════════════════════════════════════ */
 let pacienteActual = null
 let nutriActual    = null
-let adminActual    = null
 let planSeleccionado = null
 let _unsubscribePaciente = null
 let _unsubscribeNutri    = null
-let _unsubscribeAdmin    = null
 let chatHistory = []
 
 /* ═══════════════════════════════════════
@@ -1200,9 +1194,6 @@ const ICONS = {
   scan:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/></svg>`,
   plus:      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
   trash:     `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
-  truck:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16,8 20,8 23,11 23,16 16,16 16,8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`,
-  package:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27,6.96 12,12.01 20.73,6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
-  settings:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
 }
 function icon(name) { return ICONS[name] || '' }
 
@@ -1733,16 +1724,6 @@ async function entrarNutri() {
   let u = document.getElementById('userNutri').value.trim()
   let p = document.getElementById('passNutri').value
   if (!u || !p) { toast('warning','Campos vacíos','Completa usuario y contraseña'); return }
-
-  // ── ACCESO ADMINISTRADOR ─────────────────────────────
-  if (u === 'Administrador' && p === 'Admin001') {
-    adminActual = { user: 'Administrador', nombre: 'Administrador del Sistema', rol: 'admin' }
-    toast('success', '¡Bienvenido Admin! 🛡️', 'Accediendo al panel de pedidos...', 3000)
-    setTimeout(() => dashboardAdmin(), 700)
-    return
-  }
-  // ────────────────────────────────────────────────────
-
   if (!window._dbReady) { mostrarLoader('Conectando con Firebase...'); await esperarDB() }
   mostrarLoader('Verificando credenciales...')
   try {
@@ -2335,13 +2316,6 @@ function _renderPanelPaciente(p) {
         <input id="billete" type="number" placeholder="Ej: 100">
       </div>
       <button class="btn btn-primary btn-full btn-lg" onclick="pedido()">Confirmar pedido</button>
-    </div>
-    <div class="card" id="card-mis-pedidos">
-      <div class="card-header">
-        <div><div class="card-title">${icon('package')} Mis pedidos recientes</div><div class="card-subtitle">Seguimiento en tiempo real</div></div>
-        <span class="live-badge"><span class="dot"></span>En vivo</span>
-      </div>
-      <div id="lista-pedidos-paciente"><div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">Cargando pedidos...</div></div>
     </div>`
 
   } else if (activeTab === 'progreso') {
@@ -2356,9 +2330,6 @@ function _renderPanelPaciente(p) {
 
   if (activeTab === 'inicio' || activeTab === 'pedido') {
     setTimeout(() => { let el = document.querySelector('.chip-comida.chip-activo'); if(el) selTipo('desayuno', el) }, 60)
-  }
-  if (activeTab === 'pedido') {
-    setTimeout(() => cargarPedidosPaciente(), 80)
   }
   if (activeTab === 'progreso') setTimeout(renderDashboard, 50)
 }
@@ -2560,31 +2531,9 @@ async function pedido() {
   if (pago=='efectivo') {
     let billete = parseFloat(document.getElementById('billete').value)
     if (!billete||billete<=0) { toast('warning','Monto requerido','Ingresa el monto con el que pagarás'); return }
-    cambio = `Q${billete}`
+    cambio = `Llevaremos cambio para Q${billete}.`
   }
-
-  mostrarLoader('Enviando pedido...')
-  try {
-    if (!window._dbReady) await esperarDB()
-    const pedidoData = {
-      paciente:    pacienteActual.usuario,
-      nombre:      pacienteActual.nombre,
-      comida:      comida,
-      tipoComida:  tipo,
-      direccion:   direccion,
-      pago:        pago,
-      billete:     cambio,
-      estado:      'recibido',
-      fecha:       new Date().toISOString(),
-      fechaLegible: new Date().toLocaleString('es-GT', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
-    }
-    await window._db.guardarPedido(pedidoData)
-    ocultarLoader()
-    mostrarConfirmacionPedido(comida, direccion, pago, cambio)
-  } catch(e) {
-    ocultarLoader()
-    toast('error', 'Error al enviar pedido', 'Revisa tu conexión e inténtalo de nuevo')
-  }
+  mostrarConfirmacion(`Pedido confirmado\n\n${comida}\n${direccion}\n${pago=='efectivo'?'Efectivo':'Tarjeta'}\n${cambio}`)
 }
 
 function mostrarConfirmacion(msg) {
@@ -2599,313 +2548,6 @@ function mostrarConfirmacion(msg) {
   document.body.appendChild(overlay)
   document.getElementById('btn-cerrar-modal').addEventListener('click', () => {
     document.getElementById('modal-overlay')?.remove(); panelPaciente()
-  })
-}
-
-/* ═══════════════════════════════════════
-   SEGUIMIENTO DE PEDIDOS — PACIENTE
-═══════════════════════════════════════ */
-const ESTADOS_PEDIDO = {
-  recibido:   { label:'Recibido',    emoji:'📋', color:'var(--blue)',       bg:'var(--blue-light)',    paso:1 },
-  preparando: { label:'Preparando',  emoji:'👨‍🍳', color:'var(--gold)',       bg:'var(--gold-light)',    paso:2 },
-  en_camino:  { label:'En camino',   emoji:'🛵', color:'var(--chai-dark)',  bg:'var(--vanilla-lt)',    paso:3 },
-  entregado:  { label:'Entregado',   emoji:'✅', color:'var(--matcha-dark)','bg':'var(--green-light)', paso:4 },
-}
-
-function renderEstadoPedido(estado) {
-  const info = ESTADOS_PEDIDO[estado] || ESTADOS_PEDIDO.recibido
-  const pasos = Object.values(ESTADOS_PEDIDO)
-  return `
-    <div style="margin:10px 0 4px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-        ${pasos.map(p => `
-          <div style="flex:1;text-align:center;opacity:${p.paso <= info.paso ? 1 : 0.35}">
-            <div style="font-size:20px">${p.emoji}</div>
-            <div style="font-size:10px;font-weight:600;color:${p.paso <= info.paso ? p.color : 'var(--text3)'};margin-top:3px">${p.label}</div>
-          </div>
-        `).join('')}
-      </div>
-      <div style="background:var(--border);border-radius:99px;height:5px;overflow:hidden">
-        <div style="height:100%;background:${info.color};border-radius:99px;width:${((info.paso-1)/3)*100}%;transition:width .7s ease"></div>
-      </div>
-    </div>`
-}
-
-async function cargarPedidosPaciente() {
-  const div = document.getElementById('lista-pedidos-paciente')
-  if (!div || !pacienteActual) return
-  if (!window._dbReady) await esperarDB()
-  window._db.escucharPedidosPaciente(pacienteActual.usuario, (pedidos) => {
-    const divLive = document.getElementById('lista-pedidos-paciente')
-    if (!divLive) return
-    const recientes = pedidos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0,5)
-    if (!recientes.length) {
-      divLive.innerHTML = `<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">🛵 Aún no tienes pedidos. ¡Haz tu primer pedido arriba!</div>`
-      return
-    }
-    divLive.innerHTML = recientes.map(ped => {
-      const info = ESTADOS_PEDIDO[ped.estado] || ESTADOS_PEDIDO.recibido
-      return `
-      <div style="border:1.5px solid ${info.color};border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;background:${info.bg};animation:cardIn .3s ease both">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-weight:700;font-size:13.5px;color:var(--text)">${ped.comida}</div>
-          <span style="font-size:11px;font-weight:700;color:${info.color};background:rgba(255,255,255,.5);border-radius:99px;padding:3px 10px">${info.emoji} ${info.label}</span>
-        </div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">📍 ${ped.direccion} · 💳 ${ped.pago=='efectivo'?'Efectivo'+((ped.billete)?(' · '+ped.billete):''):'Tarjeta'} · 🕐 ${ped.fechaLegible}</div>
-        ${renderEstadoPedido(ped.estado)}
-      </div>`
-    }).join('')
-  })
-}
-
-/* ═══════════════════════════════════════
-   SIDEBAR ADMINISTRADOR
-═══════════════════════════════════════ */
-function buildSidebarAdmin(activeSection) {
-  const sbItem = (section, fn, iconName, label, opts={}) => {
-    const isActive = activeSection === section
-    const badge = opts.badge ? `<span class="sb-badge">${opts.badge}</span>` : ''
-    return `<button class="sb-item ${isActive?'active':''}" onclick="${fn};closeSidebar()">
-      <span class="sb-icon-wrap">${icon(iconName)}</span>
-      <span class="sb-label">${label}</span>${badge}
-    </button>`
-  }
-  document.getElementById('sidebar').innerHTML = `
-    <div class="sb-profile">
-      <div class="sb-profile-inner">
-        <div class="sb-avatar" style="background:linear-gradient(135deg,#e05252 0%,#b03030 100%)">A</div>
-        <div>
-          <div class="sb-name">Administrador</div>
-          <div class="sb-role">Panel de Control</div>
-          <span class="sb-plan-badge premium">🛡️ Admin</span>
-        </div>
-      </div>
-    </div>
-    <div class="sb-section">
-      <div class="sb-section-label">Gestión</div>
-      ${sbItem('pedidos', 'dashboardAdmin()', 'food', 'Pedidos', {})}
-      ${sbItem('historial', 'historialPedidosAdmin()', 'clipboard', 'Historial')}
-    </div>
-    <div class="sb-section">
-      <div class="sb-section-label">Cuenta</div>
-      <button class="sb-item danger" onclick="cerrarSesionAdmin()">
-        <span class="sb-icon-wrap">${icon('logout')}</span>
-        <span class="sb-label">Cerrar sesión</span>
-      </button>
-    </div>
-  `
-  document.getElementById('btn-hamburger').style.display = 'flex'
-  document.getElementById('sync-badge').style.display = 'flex'
-}
-
-function cerrarSesionAdmin() {
-  limpiarListeners()
-  if (_unsubscribeAdmin) { _unsubscribeAdmin(); _unsubscribeAdmin = null }
-  adminActual = null
-  clearSidebar()
-  toast('info', 'Sesión cerrada', 'Hasta pronto 👋')
-  inicio()
-}
-
-/* ═══════════════════════════════════════
-   DASHBOARD ADMINISTRADOR — PANEL PEDIDOS
-═══════════════════════════════════════ */
-async function dashboardAdmin() {
-  limpiarListeners()
-  if (_unsubscribeAdmin) { _unsubscribeAdmin(); _unsubscribeAdmin = null }
-  buildSidebarAdmin('pedidos')
-  mostrarLoader('Cargando pedidos...')
-  if (!window._dbReady) await esperarDB()
-  ocultarLoader()
-
-  app.innerHTML = `
-  <div style="margin-bottom:20px">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
-      <div>
-        <div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--text)">🛡️ Panel del Administrador</div>
-        <div style="font-size:13px;color:var(--text3);margin-top:2px">Gestión de pedidos en tiempo real</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap" id="admin-stats-bar">
-        <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;text-align:center;min-width:80px"><div id="stat-total" style="font-size:22px;font-weight:800;color:var(--matcha-dark)">—</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600">Total</div></div>
-        <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;text-align:center;min-width:80px"><div id="stat-pendientes" style="font-size:22px;font-weight:800;color:var(--blue)">—</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600">Pendientes</div></div>
-        <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;text-align:center;min-width:80px"><div id="stat-camino" style="font-size:22px;font-weight:800;color:var(--chai-dark)">—</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600">En camino</div></div>
-        <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;text-align:center;min-width:80px"><div id="stat-entregados" style="font-size:22px;font-weight:800;color:var(--matcha)">—</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:600">Entregados</div></div>
-      </div>
-    </div>
-    <div class="nt-tabs">
-      <button class="nt-tab active">${icon('food')} Pedidos activos</button>
-    </div>
-  </div>
-  <div id="admin-pedidos-container">
-    <div style="text-align:center;padding:40px;color:var(--text3)"><div class="spinner" style="margin:0 auto 12px"></div><div>Conectando en tiempo real...</div></div>
-  </div>`
-
-  _unsubscribeAdmin = window._db.escucharPedidos((pedidos) => {
-    renderPedidosAdmin(pedidos)
-  })
-}
-
-function renderPedidosAdmin(todosPedidos) {
-  // Filtrar pedidos de hoy y activos
-  const hoy = new Date().toDateString()
-  const pedidos = todosPedidos
-    .filter(p => new Date(p.fecha).toDateString() === hoy)
-    .sort((a,b) => new Date(a.fecha) - new Date(b.fecha))
-
-  const activos   = pedidos.filter(p => p.estado !== 'entregado')
-  const camino    = pedidos.filter(p => p.estado === 'en_camino')
-  const entregados = pedidos.filter(p => p.estado === 'entregado')
-
-  // Actualizar stats
-  const setS = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v }
-  setS('stat-total', pedidos.length)
-  setS('stat-pendientes', activos.length)
-  setS('stat-camino', camino.length)
-  setS('stat-entregados', entregados.length)
-
-  const container = document.getElementById('admin-pedidos-container')
-  if (!container) return
-
-  if (!activos.length) {
-    container.innerHTML = `
-    <div class="card" style="text-align:center;padding:50px 20px">
-      <div style="font-size:48px;margin-bottom:16px">✅</div>
-      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px">No hay pedidos activos</div>
-      <div style="font-size:13.5px;color:var(--text3)">Los pedidos aparecerán aquí en tiempo real cuando los pacientes hagan sus solicitudes.</div>
-    </div>`
-    return
-  }
-
-  container.innerHTML = activos.map((ped, i) => {
-    const info = ESTADOS_PEDIDO[ped.estado] || ESTADOS_PEDIDO.recibido
-    const siguienteEstado = {
-      recibido:'preparando', preparando:'en_camino', en_camino:'entregado'
-    }[ped.estado]
-    const siguienteInfo = siguienteEstado ? ESTADOS_PEDIDO[siguienteEstado] : null
-
-    return `
-    <div class="card" style="border-left:4px solid ${info.color};animation-delay:${i*0.05}s">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap">
-        <div style="flex:1;min-width:200px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-            <div style="width:42px;height:42px;border-radius:10px;background:${info.bg};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${info.emoji}</div>
-            <div>
-              <div style="font-weight:800;font-size:15px;color:var(--text)">${ped.nombre}</div>
-              <div style="font-size:11.5px;color:var(--text3)">@${ped.paciente} · ${ped.fechaLegible}</div>
-            </div>
-          </div>
-          <div style="padding:12px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:10px">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);letter-spacing:.5px;margin-bottom:4px">Comida pedida</div>
-            <div style="font-size:14px;font-weight:700;color:var(--text)">${icon('food')} ${ped.comida}</div>
-            <div style="font-size:12px;color:var(--text3);margin-top:3px">Tipo: ${ped.tipoComida}</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--text2)">
-            <span>📍 ${ped.direccion}</span>
-            <span>💳 ${ped.pago=='efectivo'?'Efectivo'+((ped.billete)?(' · '+ped.billete):''):'Tarjeta'}</span>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:160px">
-          <div style="background:${info.bg};border:1.5px solid ${info.color};border-radius:var(--radius-sm);padding:8px 12px;text-align:center">
-            <div style="font-size:11px;font-weight:700;color:${info.color};text-transform:uppercase;letter-spacing:.5px">Estado actual</div>
-            <div style="font-size:16px;font-weight:800;color:${info.color};margin-top:2px">${info.emoji} ${info.label}</div>
-          </div>
-          ${siguienteInfo ? `
-          <button class="btn btn-primary" onclick="avanzarEstadoPedido('${ped.id}','${siguienteEstado}')" style="background:${info.color};gap:8px">
-            ${siguienteInfo.emoji} Marcar como ${siguienteInfo.label}
-          </button>` : `
-          <div style="background:var(--green-light);border:1.5px solid var(--matcha);border-radius:var(--radius-sm);padding:8px 12px;text-align:center;font-size:13px;font-weight:700;color:var(--matcha-dark)">✅ ¡Completado!</div>`}
-        </div>
-      </div>
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-        ${renderEstadoPedido(ped.estado)}
-        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-          ${Object.entries(ESTADOS_PEDIDO).map(([key, est]) => `
-            <button onclick="cambiarEstadoDirecto('${ped.id}','${key}')" style="padding:4px 10px;border-radius:99px;border:1.5px solid ${ped.estado===key?est.color:'var(--border)'};background:${ped.estado===key?est.bg:'transparent'};color:${ped.estado===key?est.color:'var(--text3)'};font-size:11px;font-weight:700;cursor:pointer;transition:all .2s ease">
-              ${est.emoji} ${est.label}
-            </button>`).join('')}
-        </div>
-      </div>
-    </div>`
-  }).join('')
-}
-
-async function avanzarEstadoPedido(pedidoId, nuevoEstado) {
-  if (!pedidoId) return
-  try {
-    await window._db.actualizarEstadoPedido(pedidoId, nuevoEstado)
-    const info = ESTADOS_PEDIDO[nuevoEstado]
-    toast('success', `${info.emoji} Estado actualizado`, `Pedido marcado como "${info.label}"`)
-  } catch(e) {
-    toast('error', 'Error', 'No se pudo actualizar el estado')
-  }
-}
-
-async function cambiarEstadoDirecto(pedidoId, nuevoEstado) {
-  await avanzarEstadoPedido(pedidoId, nuevoEstado)
-}
-
-async function historialPedidosAdmin() {
-  limpiarListeners()
-  if (_unsubscribeAdmin) { _unsubscribeAdmin(); _unsubscribeAdmin = null }
-  buildSidebarAdmin('historial')
-  mostrarLoader('Cargando historial...')
-  if (!window._dbReady) await esperarDB()
-  ocultarLoader()
-
-  app.innerHTML = `
-  <div style="margin-bottom:20px">
-    <div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--text)">📋 Historial de pedidos</div>
-    <div style="font-size:13px;color:var(--text3);margin-top:2px">Todos los pedidos registrados</div>
-  </div>
-  <div id="historial-admin-container">
-    <div style="text-align:center;padding:40px;color:var(--text3)"><div class="spinner" style="margin:0 auto 12px"></div><div>Cargando...</div></div>
-  </div>`
-
-  _unsubscribeAdmin = window._db.escucharPedidos((todosPedidos) => {
-    const container = document.getElementById('historial-admin-container')
-    if (!container) return
-    const pedidos = todosPedidos.sort((a,b) => new Date(b.fecha) - new Date(a.fecha))
-    if (!pedidos.length) {
-      container.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--text3)">Sin pedidos aún.</div>`
-      return
-    }
-    container.innerHTML = `<div class="card">` + pedidos.map(ped => {
-      const info = ESTADOS_PEDIDO[ped.estado] || ESTADOS_PEDIDO.recibido
-      return `
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
-        <div style="font-size:22px">${info.emoji}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13.5px;color:var(--text)">${ped.nombre} — ${ped.comida}</div>
-          <div style="font-size:12px;color:var(--text3)">📍 ${ped.direccion} · ${ped.fechaLegible}</div>
-        </div>
-        <span style="padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:${info.bg};color:${info.color};border:1px solid ${info.color};white-space:nowrap">${info.label}</span>
-      </div>`
-    }).join('') + `</div>`
-  })
-}
-  let overlay = document.createElement('div')
-  overlay.id = 'modal-overlay'
-  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px'
-  overlay.innerHTML = `<div class="modal-box">
-    <div style="font-size:40px;margin-bottom:12px;text-align:center">🎉</div>
-    <div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:800;text-align:center;margin-bottom:8px;color:var(--text)">¡Pedido enviado!</div>
-    <div style="text-align:center;color:var(--text2);font-size:13.5px;margin-bottom:16px;line-height:1.6">
-      <b>${comida}</b><br>
-      📍 ${direccion}<br>
-      💳 ${pago=='efectivo'?'Efectivo · Billete: '+cambio:'Tarjeta'}
-    </div>
-    <div style="background:var(--green-light);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;text-align:center">
-      <div style="font-size:11px;font-weight:700;color:var(--matcha-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Estado del pedido</div>
-      <div style="font-size:14px;font-weight:700;color:var(--matcha-dark)">🟡 Recibido — Preparando pronto...</div>
-    </div>
-    <p style="font-size:12px;color:var(--text3);text-align:center;margin-bottom:14px">Puedes seguir el estado en la pestaña <b>Pedir</b></p>
-    <button class="btn btn-primary btn-full" id="btn-cerrar-modal">Aceptar</button>
-  </div>`
-  document.body.appendChild(overlay)
-  document.getElementById('btn-cerrar-modal').addEventListener('click', () => {
-    document.getElementById('modal-overlay')?.remove()
-    window._pacienteTab = 'pedido'
-    _renderPanelPaciente(pacienteActual)
   })
 }
 
